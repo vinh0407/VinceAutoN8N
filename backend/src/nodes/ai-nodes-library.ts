@@ -24,6 +24,71 @@ export interface IAiNodeDef {
   ) => Promise<INodeExecutionData[]>;
 }
 
+export const STANDARD_AI_AGENT_PROPERTIES: INodeProperty[] = [
+  {
+    name: 'baseUrl',
+    displayName: 'Base URL (Đường link API Endpoint)',
+    type: 'string',
+    default: 'https://opencode.ai/zen/v1',
+    placeholder: 'https://opencode.ai/zen/v1 hoặc https://api.openai.com/v1',
+    required: true,
+  },
+  {
+    name: 'model',
+    displayName: 'Lựa chọn Model',
+    type: 'options',
+    default: 'crouton-alpha-free',
+    options: [
+      { name: 'crouton-alpha-free (Opencode2 Miễn phí)', value: 'crouton-alpha-free' },
+      { name: 'gpt-4o (OpenAI Omni Flagship)', value: 'gpt-4o' },
+      { name: 'gpt-4o-mini (OpenAI Fast & Efficient)', value: 'gpt-4o-mini' },
+      { name: 'o3-mini (OpenAI Reasoning)', value: 'o3-mini' },
+      { name: 'gemini-2.0-flash (Google Gemini Flash)', value: 'gemini-2.0-flash' },
+      { name: 'gemini-1.5-pro (Google Gemini Pro)', value: 'gemini-1.5-pro' },
+      { name: 'claude-3-5-sonnet (Anthropic Claude)', value: 'claude-3-5-sonnet' },
+      { name: 'deepseek-chat (DeepSeek V3)', value: 'deepseek-chat' },
+      { name: 'deepseek-reasoner (DeepSeek R1)', value: 'deepseek-reasoner' },
+      { name: 'llama3:latest (Local Ollama)', value: 'llama3' },
+      { name: 'Custom Model (Tự nhập model khác)', value: 'custom' },
+    ],
+    required: true,
+  },
+  {
+    name: 'customModel',
+    displayName: 'Tên Model Tùy Chỉnh (Nếu chọn Custom)',
+    type: 'string',
+    default: '',
+    placeholder: 'Nhập tên model (VD: qwen2.5-coder:32b, mistral-large)...',
+  },
+  {
+    name: 'apiKey',
+    displayName: 'API Key (Tùy chọn, để trống dùng Credentials)',
+    type: 'string',
+    default: '',
+    placeholder: 'oc_sk_... hoặc sk-...',
+  },
+  {
+    name: 'prompt',
+    displayName: 'Prompt / Mục tiêu của AI Agent',
+    type: 'string',
+    default: 'Hãy thực thi nhiệm vụ sau với dữ liệu đầu vào:\n{{ JSON.stringify($json) }}',
+    placeholder: 'Nhập prompt hoặc chỉ dẫn nhiệm vụ...',
+    required: true,
+  },
+  {
+    name: 'systemPrompt',
+    displayName: 'System Prompt (Vai trò của AI Agent)',
+    type: 'string',
+    default: 'Bạn là AI Agent thông minh của VinceAuto, thực hiện nhiệm vụ chính xác và súc tích.',
+  },
+  {
+    name: 'temperature',
+    displayName: 'Temperature',
+    type: 'number',
+    default: 0.7,
+  },
+];
+
 export function createGenericAiNode(def: IAiNodeDef): INodeType {
   return {
     description: {
@@ -35,14 +100,14 @@ export function createGenericAiNode(def: IAiNodeDef): INodeType {
       version: 1,
       inputs: ['main'],
       outputs: ['main'],
-      properties: def.properties || [
+      properties: def.properties || (def.aiGroup === 'agents' || def.name.startsWith('ai.agent') ? STANDARD_AI_AGENT_PROPERTIES : [
         {
           displayName: 'Configuration',
           name: 'config',
           type: 'string',
           default: JSON.stringify(def.defaultParameters || {}, null, 2),
         },
-      ],
+      ]),
     },
     async execute(
       this: any,

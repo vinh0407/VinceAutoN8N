@@ -73,6 +73,8 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [activeHistoryChat, setActiveHistoryChat] = useState<IAIChatHistoryItem | null>(null);
   const [activeHistoryLog, setActiveHistoryLog] = useState<IAIAgentProjectLog | null>(null);
+  const [selectedModel, setSelectedModel] = useState<string>('crouton-alpha-free');
+  const [customBaseUrl, setCustomBaseUrl] = useState<string>('https://opencode.ai/zen/v1');
   const [showProviderDetails, setShowProviderDetails] = useState(false);
   const [nodePromptCategory, setNodePromptCategory] = useState<
     'all' | 'trigger' | 'app' | 'transform' | 'flow_core' | 'ai_agent'
@@ -112,6 +114,8 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
         prompt: promptToRun,
         existingWorkflow: currentWorkflow || { id: 'wf_draft', name: 'Bản vẽ mới', nodes: [], connections: [] },
         provider: 'opencode2',
+        baseUrl: customBaseUrl,
+        model: selectedModel,
       });
 
       if (res.data?.success && res.data?.plan) {
@@ -213,8 +217,8 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-zinc-400">
-                Provider: <strong className="text-zinc-200">{OPENCODE2_PROVIDER_CONFIG.providerName}</strong> • Model:{' '}
-                <strong className="text-[#e6e8ec] font-mono">{OPENCODE2_PROVIDER_CONFIG.models}</strong>
+                Base URL: <strong className="text-sky-300 font-mono">{customBaseUrl.replace(/^https?:\/\//, '')}</strong> • Model:{' '}
+                <strong className="text-emerald-300 font-mono">{selectedModel}</strong>
               </p>
             </div>
           </div>
@@ -224,9 +228,9 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
               type="button"
               onClick={() => setShowProviderDetails(!showProviderDetails)}
               className="px-2 py-1 rounded-lg bg-[#222226] hover:bg-[#2c2c31] border border-[#34343a] text-[10px] font-semibold text-zinc-300 hover:text-white transition-colors cursor-pointer"
-              title="Xem cấu hình Provider Opencode2"
+              title="Cấu hình Base URL và Lựa chọn Model cho AI Agent"
             >
-              {showProviderDetails ? 'Ẩn cấu hình' : 'Chi tiết Model'}
+              {showProviderDetails ? 'Ẩn cấu hình' : 'Cấu hình API'}
             </button>
             <button
               onClick={onClose}
@@ -238,36 +242,90 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
           </div>
         </div>
 
-        {/* Collapsible Provider Specification Table matching user CSV */}
+        {/* Collapsible Provider Specification & Config */}
         {showProviderDetails && (
-          <div className="p-2.5 rounded-xl bg-[#1d1d21] border border-[#303036] text-[10.5px] space-y-1 animate-in fade-in duration-150">
-            <div className="flex items-center justify-between text-zinc-400">
-              <span>Tên Provider / Loại:</span>
-              <span className="font-mono font-bold text-zinc-100">
-                {OPENCODE2_PROVIDER_CONFIG.providerName} ({OPENCODE2_PROVIDER_CONFIG.providerType})
-              </span>
+          <div className="p-3 rounded-xl bg-[#1d1d21] border border-[#34343c] text-[11px] space-y-2.5 animate-in fade-in duration-150">
+            {/* Base URL */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-zinc-300 font-medium">
+                <span>Đường link Base URL:</span>
+                <span className="text-[10px] font-mono text-sky-400">API Endpoint</span>
+              </div>
+              <input
+                type="text"
+                value={customBaseUrl}
+                onChange={(e) => setCustomBaseUrl(e.target.value)}
+                placeholder="https://opencode.ai/zen/v1"
+                className="w-full bg-[#151518] border border-[#2f2f35] rounded-md px-2.5 py-1 text-xs font-mono text-sky-300 focus:outline-none focus:border-[#e6e8ec]"
+              />
+              <div className="flex items-center flex-wrap gap-1 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => setCustomBaseUrl('https://opencode.ai/zen/v1')}
+                  className="px-1.5 py-0.5 rounded text-[9.5px] bg-[#26262b] hover:bg-[#323238] text-zinc-300 font-mono"
+                >
+                  Opencode2
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCustomBaseUrl('https://api.openai.com/v1')}
+                  className="px-1.5 py-0.5 rounded text-[9.5px] bg-[#26262b] hover:bg-[#323238] text-zinc-300 font-mono"
+                >
+                  OpenAI
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCustomBaseUrl('https://api.deepseek.com/v1')}
+                  className="px-1.5 py-0.5 rounded text-[9.5px] bg-[#26262b] hover:bg-[#323238] text-zinc-300 font-mono"
+                >
+                  DeepSeek
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCustomBaseUrl('http://localhost:11434/v1')}
+                  className="px-1.5 py-0.5 rounded text-[9.5px] bg-[#26262b] hover:bg-[#323238] text-zinc-300 font-mono"
+                >
+                  Ollama
+                </button>
+              </div>
             </div>
-            <div className="flex items-center justify-between text-zinc-400">
-              <span>Base URL:</span>
-              <span className="font-mono text-sky-300">{OPENCODE2_PROVIDER_CONFIG.baseUrl}</span>
-            </div>
-            <div className="flex items-center justify-between text-zinc-400">
-              <span>Danh Sách Models:</span>
-              <span className="font-mono font-bold text-emerald-300">
-                {OPENCODE2_PROVIDER_CONFIG.models}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-zinc-400">
-              <span>API Key:</span>
-              <span className="font-mono text-zinc-300">
-                {OPENCODE2_PROVIDER_CONFIG.apiKey
-                  ? `${OPENCODE2_PROVIDER_CONFIG.apiKey.slice(0, 8)}••••••••`
-                  : 'Cấu hình trong Credentials / .env'}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-zinc-400">
-              <span>Ngày tạo:</span>
-              <span className="font-mono text-zinc-400">{OPENCODE2_PROVIDER_CONFIG.createdAt}</span>
+
+            {/* Model Selection Dropdown */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-zinc-300 font-medium">
+                <span>Mục Lựa Chọn Model:</span>
+                <span className="text-[10px] font-mono text-emerald-400 font-bold">{selectedModel}</span>
+              </div>
+              <select
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                className="w-full bg-[#151518] border border-[#2f2f35] rounded-md px-2.5 py-1 text-xs text-zinc-100 focus:outline-none focus:border-[#e6e8ec]"
+              >
+                <optgroup label="Opencode2 (Miễn phí)">
+                  <option value="crouton-alpha-free">crouton-alpha-free (Opencode2 - Miễn phí không giới hạn)</option>
+                </optgroup>
+                <optgroup label="OpenAI">
+                  <option value="gpt-4o">gpt-4o (OpenAI Omni Flagship)</option>
+                  <option value="gpt-4o-mini">gpt-4o-mini (OpenAI Fast & Cost-effective)</option>
+                  <option value="o3-mini">o3-mini (OpenAI Reasoning)</option>
+                </optgroup>
+                <optgroup label="Google Gemini">
+                  <option value="gemini-2.0-flash">gemini-2.0-flash (Google Gemini Flash)</option>
+                  <option value="gemini-1.5-pro">gemini-1.5-pro (Google Gemini Pro)</option>
+                </optgroup>
+                <optgroup label="Anthropic Claude">
+                  <option value="claude-3-5-sonnet">claude-3-5-sonnet (Anthropic Sonnet 3.5)</option>
+                  <option value="claude-3-5-haiku">claude-3-5-haiku (Anthropic Haiku 3.5)</option>
+                </optgroup>
+                <optgroup label="DeepSeek">
+                  <option value="deepseek-chat">deepseek-chat (DeepSeek V3)</option>
+                  <option value="deepseek-reasoner">deepseek-reasoner (DeepSeek R1)</option>
+                </optgroup>
+                <optgroup label="Local Ollama">
+                  <option value="llama3:latest">llama3:latest (Local Ollama)</option>
+                  <option value="qwen2.5-coder:32b">qwen2.5-coder:32b (Qwen Coder)</option>
+                </optgroup>
+              </select>
             </div>
           </div>
         )}

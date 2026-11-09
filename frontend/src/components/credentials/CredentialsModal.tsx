@@ -24,11 +24,36 @@ export const CredentialsModal: React.FC<CredentialsModalProps> = ({ onClose }) =
   const [maskedInfo, setMaskedInfo] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isCustomModel, setIsCustomModel] = useState(false);
+
+  const standardModels = [
+    { value: 'crouton-alpha-free', label: 'crouton-alpha-free (Opencode2 Miễn phí)' },
+    { value: 'gpt-4o', label: 'gpt-4o (OpenAI Omni Flagship)' },
+    { value: 'gpt-4o-mini', label: 'gpt-4o-mini (OpenAI Fast & Cost-effective)' },
+    { value: 'o3-mini', label: 'o3-mini (OpenAI Reasoning)' },
+    { value: 'gemini-2.0-flash', label: 'gemini-2.0-flash (Google Gemini Flash)' },
+    { value: 'gemini-1.5-pro', label: 'gemini-1.5-pro (Google Gemini Pro)' },
+    { value: 'claude-3-5-sonnet', label: 'claude-3-5-sonnet (Anthropic Claude)' },
+    { value: 'deepseek-chat', label: 'deepseek-chat (DeepSeek V3)' },
+    { value: 'deepseek-reasoner', label: 'deepseek-reasoner (DeepSeek R1)' },
+    { value: 'llama3:latest', label: 'llama3:latest (Local Ollama)' },
+  ];
 
   useEffect(() => {
     axios.get('/api/credentials').then((res) => {
       if (res.data?.success && res.data?.credentials) {
         setMaskedInfo(res.data.credentials);
+        const c = res.data.credentials;
+        if (c.OPENCODE2_MODEL && !standardModels.some((m) => m.value === c.OPENCODE2_MODEL)) {
+          setIsCustomModel(true);
+        }
+        setCredentials((prev) => ({
+          ...prev,
+          OPENCODE2_BASE_URL: c.OPENCODE2_BASE_URL || prev.OPENCODE2_BASE_URL,
+          OPENCODE2_MODEL: c.OPENCODE2_MODEL || prev.OPENCODE2_MODEL,
+          OPENCODE2_API_KEY: c.OPENCODE2_API_KEY || prev.OPENCODE2_API_KEY,
+          OLLAMA_BASE_URL: c.OLLAMA_BASE_URL || prev.OLLAMA_BASE_URL,
+        }));
       }
     });
   }, []);
@@ -88,56 +113,154 @@ export const CredentialsModal: React.FC<CredentialsModalProps> = ({ onClose }) =
             </div>
           )}
 
-          {/* Active Primary AI Agent Provider: Opencode2 (crouton-alpha-free) */}
-          <div className="p-3.5 rounded-xl bg-[#1d1d21] border border-[#34343c] space-y-2.5">
-            <div className="flex items-center justify-between">
+          {/* Active Primary AI Agent Provider: Opencode2 & LLM APIs */}
+          <div className="p-4 rounded-xl bg-[#1d1d21] border border-[#34343c] space-y-3.5">
+            <div className="flex items-center justify-between border-b border-[#2a2a30] pb-2">
               <div className="flex items-center space-x-2">
                 <span className="text-xs font-bold text-[#e6e8ec]">
-                  AI Agent Mặc Định: Opencode2 (openai)
+                  Cấu Hình API AI Agent & LLM
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                  Kích hoạt
+                  {credentials.OPENCODE2_API_KEY ? 'Đang hoạt động' : 'Chưa nhập API Key'}
                 </span>
               </div>
-              <span className="text-[10px] font-mono text-zinc-400">2026-11-08T00:12:36.869Z</span>
+              <span className="text-[10px] font-mono text-zinc-400">Tương thích chuẩn OpenAI API</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-[10px] text-zinc-400 block mb-1">Base URL</label>
-                <input
-                  type="text"
-                  value={credentials.OPENCODE2_BASE_URL}
-                  onChange={(e) =>
-                    setCredentials({ ...credentials, OPENCODE2_BASE_URL: e.target.value })
-                  }
-                  className="w-full bg-[#151518] border border-[#2f2f35] rounded-lg px-2.5 py-1.5 text-[11px] font-mono text-sky-300 focus:outline-none focus:border-[#e6e8ec]"
-                />
+            {/* 1. Base URL Input & Quick Presets */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-zinc-200">
+                  Đường link Base URL (API Endpoint)
+                </label>
+                <span className="text-[10px] text-zinc-400">Endpoint API gọi mô hình</span>
               </div>
-              <div>
-                <label className="text-[10px] text-zinc-400 block mb-1">Danh Sách Models</label>
-                <input
-                  type="text"
-                  value={credentials.OPENCODE2_MODEL}
-                  onChange={(e) =>
-                    setCredentials({ ...credentials, OPENCODE2_MODEL: e.target.value })
-                  }
-                  className="w-full bg-[#151518] border border-[#2f2f35] rounded-lg px-2.5 py-1.5 text-[11px] font-mono text-emerald-300 focus:outline-none focus:border-[#e6e8ec]"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-[10px] text-zinc-400 block mb-1">
-                Opencode2 API Key (oc_sk_...)
-              </label>
               <input
                 type="text"
+                value={credentials.OPENCODE2_BASE_URL}
+                onChange={(e) =>
+                  setCredentials({ ...credentials, OPENCODE2_BASE_URL: e.target.value })
+                }
+                placeholder="https://opencode.ai/zen/v1 hoặc https://api.openai.com/v1"
+                className="w-full bg-[#151518] border border-[#2f2f35] rounded-lg px-3 py-2 text-xs font-mono text-sky-300 focus:outline-none focus:border-[#e6e8ec]"
+              />
+              <div className="flex items-center flex-wrap gap-1.5 pt-1">
+                <span className="text-[10px] text-zinc-400">Gợi ý nhanh:</span>
+                <button
+                  type="button"
+                  onClick={() => setCredentials({ ...credentials, OPENCODE2_BASE_URL: 'https://opencode.ai/zen/v1' })}
+                  className="px-2 py-0.5 rounded text-[10px] bg-[#26262b] hover:bg-[#323238] text-zinc-300 font-mono transition-colors"
+                >
+                  Opencode2 (Mặc định)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCredentials({ ...credentials, OPENCODE2_BASE_URL: 'https://api.openai.com/v1' })}
+                  className="px-2 py-0.5 rounded text-[10px] bg-[#26262b] hover:bg-[#323238] text-zinc-300 font-mono transition-colors"
+                >
+                  OpenAI
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCredentials({ ...credentials, OPENCODE2_BASE_URL: 'https://api.deepseek.com/v1' })}
+                  className="px-2 py-0.5 rounded text-[10px] bg-[#26262b] hover:bg-[#323238] text-zinc-300 font-mono transition-colors"
+                >
+                  DeepSeek
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCredentials({ ...credentials, OPENCODE2_BASE_URL: 'http://localhost:11434/v1' })}
+                  className="px-2 py-0.5 rounded text-[10px] bg-[#26262b] hover:bg-[#323238] text-zinc-300 font-mono transition-colors"
+                >
+                  Ollama Local
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Model Selection Dropdown */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-zinc-200">
+                  Mục Lựa Chọn Model
+                </label>
+                <span className="text-[10px] text-emerald-400 font-mono">
+                  {credentials.OPENCODE2_MODEL}
+                </span>
+              </div>
+              <select
+                value={isCustomModel ? 'custom' : credentials.OPENCODE2_MODEL}
+                onChange={(e) => {
+                  if (e.target.value === 'custom') {
+                    setIsCustomModel(true);
+                  } else {
+                    setIsCustomModel(false);
+                    setCredentials({ ...credentials, OPENCODE2_MODEL: e.target.value });
+                  }
+                }}
+                className="w-full bg-[#151518] border border-[#2f2f35] rounded-lg px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-[#e6e8ec]"
+              >
+                <optgroup label="Opencode2 (Miễn phí)">
+                  <option value="crouton-alpha-free">crouton-alpha-free (Opencode2 - Miễn phí không giới hạn)</option>
+                </optgroup>
+                <optgroup label="OpenAI">
+                  <option value="gpt-4o">gpt-4o (OpenAI Omni Flagship)</option>
+                  <option value="gpt-4o-mini">gpt-4o-mini (OpenAI Fast & Cost-effective)</option>
+                  <option value="o3-mini">o3-mini (OpenAI Reasoning)</option>
+                  <option value="o1-preview">o1-preview (OpenAI Deep Reasoning)</option>
+                </optgroup>
+                <optgroup label="Google Gemini">
+                  <option value="gemini-2.0-flash">gemini-2.0-flash (Google Gemini Flash 2.0)</option>
+                  <option value="gemini-1.5-pro">gemini-1.5-pro (Google Gemini Pro)</option>
+                  <option value="gemini-1.5-flash">gemini-1.5-flash (Google Gemini Flash)</option>
+                </optgroup>
+                <optgroup label="Anthropic Claude">
+                  <option value="claude-3-5-sonnet">claude-3-5-sonnet (Anthropic Sonnet 3.5)</option>
+                  <option value="claude-3-5-haiku">claude-3-5-haiku (Anthropic Haiku 3.5)</option>
+                </optgroup>
+                <optgroup label="DeepSeek">
+                  <option value="deepseek-chat">deepseek-chat (DeepSeek V3)</option>
+                  <option value="deepseek-reasoner">deepseek-reasoner (DeepSeek R1)</option>
+                </optgroup>
+                <optgroup label="Ollama / Local">
+                  <option value="llama3:latest">llama3:latest (Local Ollama)</option>
+                  <option value="llama3.3:70b">llama3.3:70b (Meta LLaMA 3.3)</option>
+                  <option value="qwen2.5-coder:32b">qwen2.5-coder:32b (Qwen Coder)</option>
+                </optgroup>
+                <option value="custom">-- Tự nhập model khác (Custom Model) --</option>
+              </select>
+
+              {isCustomModel && (
+                <div className="pt-1">
+                  <input
+                    type="text"
+                    value={credentials.OPENCODE2_MODEL}
+                    onChange={(e) =>
+                      setCredentials({ ...credentials, OPENCODE2_MODEL: e.target.value })
+                    }
+                    placeholder="Nhập tên model (VD: qwen2.5-coder:32b, mistral-large, gpt-4o-2024-11-20)..."
+                    className="w-full bg-[#151518] border border-amber-500/50 rounded-lg px-3 py-1.5 text-xs font-mono text-amber-300 focus:outline-none focus:border-amber-400"
+                    autoFocus
+                  />
+                  <p className="text-[10px] text-zinc-400 mt-1">
+                    Nhập chính xác định danh model được hỗ trợ bởi Base URL bạn đã điền ở trên.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* 3. API Key */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-zinc-200 block">
+                API Key (oc_sk_... hoặc sk-...)
+              </label>
+              <input
+                type="password"
                 value={credentials.OPENCODE2_API_KEY}
                 onChange={(e) =>
                   setCredentials({ ...credentials, OPENCODE2_API_KEY: e.target.value })
                 }
-                className="w-full bg-[#151518] border border-[#2f2f35] rounded-lg px-2.5 py-1.5 text-[11px] font-mono text-zinc-200 focus:outline-none focus:border-[#e6e8ec]"
+                placeholder="oc_sk_... hoặc sk-..."
+                className="w-full bg-[#151518] border border-[#2f2f35] rounded-lg px-3 py-2 text-xs font-mono text-zinc-200 focus:outline-none focus:border-[#e6e8ec]"
               />
             </div>
           </div>

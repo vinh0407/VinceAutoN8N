@@ -352,11 +352,15 @@ export function createServer() {
 
   // 5. AI Workflow Builder
   app.post('/api/ai/build', async (req, res) => {
-    const { prompt, existingWorkflow, provider } = req.body;
+    const { prompt, existingWorkflow, provider, baseUrl, model, apiKey } = req.body;
     if (!prompt) return res.status(400).json({ success: false, error: 'Prompt is required' });
 
     try {
-      const plan = await AIWorkflowBuilder.buildFromPrompt(prompt, existingWorkflow, provider);
+      const plan = await AIWorkflowBuilder.buildFromPrompt(prompt, existingWorkflow, provider, {
+        baseUrl,
+        model,
+        apiKey,
+      });
       res.json({ success: true, plan });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
@@ -388,10 +392,14 @@ export function createServer() {
     const creds = globalWorkflowStore.getCredentials();
     const masked: Record<string, string> = {};
     for (const [k, v] of Object.entries(creds)) {
-      if (typeof v === 'string' && v.length > 8) {
-        masked[k] = v.slice(0, 4) + '••••••••' + v.slice(-4);
-      } else {
-        masked[k] = '••••••••';
+      if (typeof v === 'string') {
+        const isSecret = /(_KEY|_TOKEN|_SECRET|_PASSWORD)/i.test(k);
+        if (isSecret) {
+          masked[k] = v.length > 8 ? v.slice(0, 4) + '••••••••' + v.slice(-4) : '••••••••';
+        } else {
+          // URLs, Models, Provider Names, Status are unmasked for UI selection
+          masked[k] = v;
+        }
       }
     }
     res.json({ success: true, credentials: masked, rawKeys: Object.keys(creds) });

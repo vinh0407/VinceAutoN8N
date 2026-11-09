@@ -17,6 +17,7 @@ import {
   KeyRound,
   SlidersHorizontal,
   Send,
+  Bot,
   Globe,
   Code2,
   Table as TableIcon,
@@ -101,6 +102,16 @@ function resolveAppCatalogForNode(node: any): IAppCatalogItem | null {
   }
   if (rawType.includes('notion') || rawName.includes('notion')) {
     return ALL_APPS_CATALOG.notion;
+  }
+  if (
+    rawType.includes('ai') ||
+    rawType.includes('agent') ||
+    rawType.includes('modelrouter') ||
+    rawName.includes('ai') ||
+    rawName.includes('agent') ||
+    rawName.includes('model')
+  ) {
+    return ALL_APPS_CATALOG.aiProviders;
   }
   return null;
 }
@@ -434,6 +445,14 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
   const rawType = (node?.data?.type || node?.type || '').toLowerCase();
   const rawName = (node?.data?.name || node?.name || '').toLowerCase();
   const isTelegram = appCatalog?.id === 'telegram' || rawType.includes('telegram') || rawName.includes('telegram');
+  const isAiAgent =
+    appCatalog?.id === 'aiProviders' ||
+    rawType.includes('ai') ||
+    rawType.includes('agent') ||
+    rawType.includes('modelrouter') ||
+    rawName.includes('ai') ||
+    rawName.includes('agent') ||
+    rawName.includes('model');
 
   const defaultTelegramProperties: any[] = [
     {
@@ -471,10 +490,77 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
     },
   ];
 
+  const defaultAiAgentProperties: any[] = [
+    {
+      name: 'baseUrl',
+      displayName: 'Base URL (Đường link API Endpoint)',
+      type: 'string',
+      default: 'https://opencode.ai/zen/v1',
+      placeholder: 'https://opencode.ai/zen/v1 hoặc https://api.openai.com/v1',
+      required: true,
+    },
+    {
+      name: 'model',
+      displayName: 'Lựa chọn Model',
+      type: 'options',
+      default: 'crouton-alpha-free',
+      options: [
+        { name: 'crouton-alpha-free (Opencode2 Miễn phí)', value: 'crouton-alpha-free' },
+        { name: 'gpt-4o (OpenAI Omni Flagship)', value: 'gpt-4o' },
+        { name: 'gpt-4o-mini (OpenAI Fast & Cost-effective)', value: 'gpt-4o-mini' },
+        { name: 'o3-mini (OpenAI Reasoning)', value: 'o3-mini' },
+        { name: 'gemini-2.0-flash (Google Gemini Flash)', value: 'gemini-2.0-flash' },
+        { name: 'gemini-1.5-pro (Google Gemini Pro)', value: 'gemini-1.5-pro' },
+        { name: 'claude-3-5-sonnet (Anthropic Claude Sonnet)', value: 'claude-3-5-sonnet' },
+        { name: 'deepseek-chat (DeepSeek V3)', value: 'deepseek-chat' },
+        { name: 'deepseek-reasoner (DeepSeek R1)', value: 'deepseek-reasoner' },
+        { name: 'llama3:latest (Local Ollama)', value: 'llama3' },
+        { name: 'Custom Model (Tự nhập model khác)', value: 'custom' },
+      ],
+      required: true,
+    },
+    {
+      name: 'customModel',
+      displayName: 'Tên Model Tùy Chỉnh (Nếu chọn Custom)',
+      type: 'string',
+      default: '',
+      placeholder: 'Nhập tên model (VD: qwen2.5-coder:32b, mistral-large)...',
+    },
+    {
+      name: 'apiKey',
+      displayName: 'API Key (Tùy chọn, để trống dùng Credentials)',
+      type: 'string',
+      default: '',
+      placeholder: 'oc_sk_... hoặc sk-...',
+    },
+    {
+      name: 'prompt',
+      displayName: 'Prompt / Mục tiêu của AI Agent',
+      type: 'code',
+      default: 'Hãy phân tích và xử lý dữ liệu sau:\n{{ JSON.stringify($json) }}',
+      placeholder: 'Kéo thả trường dữ liệu từ cột INPUT hoặc nhập prompt...',
+      required: true,
+    },
+    {
+      name: 'systemPrompt',
+      displayName: 'System Prompt (Vai trò của AI Agent)',
+      type: 'string',
+      default: 'Bạn là AI Agent thông minh của VinceAuto, thực hiện nhiệm vụ chính xác và súc tích.',
+    },
+    {
+      name: 'temperature',
+      displayName: 'Temperature',
+      type: 'number',
+      default: 0.7,
+    },
+  ];
+
   const properties = (nodeDescription?.properties && nodeDescription.properties.length > 0)
     ? nodeDescription.properties
     : isTelegram
     ? defaultTelegramProperties
+    : isAiAgent
+    ? defaultAiAgentProperties
     : [];
   const webhookUrl = `https://vinceauto.local/webhook-test/${node.id.replace(/[^a-zA-Z0-9-]/g, '')}`;
 
@@ -1020,6 +1106,27 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                         </div>
                         <div>
                           3. <strong>Kiểm tra ngay:</strong> Bấm nút <strong>Execute step</strong> ở góc trên bên phải để kiểm tra gửi tin nhắn hoặc giả lập chạy thử.
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Hướng dẫn cấu hình API của AI Agent: Base URL & Lựa chọn Model */}
+                  {isAiAgent && !isTelegram && (
+                    <div className="p-3.5 rounded-lg bg-[#14232c] border border-[#1e4868] text-xs space-y-2">
+                      <div className="font-semibold text-sky-400 flex items-center space-x-1.5">
+                        <Bot className="w-3.5 h-3.5 text-sky-400" />
+                        <span>Cấu hình API của AI Agent:</span>
+                      </div>
+                      <div className="text-zinc-300 text-[11.5px] leading-relaxed space-y-1">
+                        <div>
+                          1. <strong>Đường link Base URL:</strong> Nhập link endpoint API (VD: <code className="bg-black/50 px-1 py-0.5 rounded text-sky-200 font-mono">https://opencode.ai/zen/v1</code> hoặc <code className="bg-black/50 px-1 py-0.5 rounded text-sky-200 font-mono">https://api.openai.com/v1</code>).
+                        </div>
+                        <div>
+                          2. <strong>Mục lựa chọn Model:</strong> Chọn model trong danh sách (crouton-alpha-free, gpt-4o, gemini-2.0-flash, claude, deepseek-chat...) hoặc chọn Custom Model để tự nhập.
+                        </div>
+                        <div>
+                          3. <strong>Prompt & Kéo thả:</strong> Kéo thả trường dữ liệu từ cột <strong>INPUT</strong> bên trái vào ô <strong>Prompt</strong> bên dưới để truyền biến tự động.
                         </div>
                       </div>
                     </div>

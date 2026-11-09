@@ -73,8 +73,10 @@ export interface IAppCatalogItem {
   fields: {
     key: string;
     label: string;
-    type: 'string' | 'password';
-    placeholder: string;
+    type: 'string' | 'password' | 'options';
+    placeholder?: string;
+    default?: any;
+    options?: { name: string; value: string }[];
   }[];
   triggers: IAppTriggerSpec[];
   actions: IAppActionSpec[];
@@ -1280,16 +1282,29 @@ export const ALL_APPS_CATALOG: Record<string, IAppCatalogItem> = {
   // ==========================================================================
   aiProviders: {
     id: 'aiProviders',
-    name: 'AI Providers (OpenAI, Google Gemini, Anthropic Claude, Ollama & 12+ LLMs)',
-    desc: 'Text, Chat, Vision, Audio Whisper/TTS, Image Generation, Embeddings, Assistants & Tool Use',
+    name: 'AI Agent & LLM Providers (Opencode2, OpenAI, Gemini, Claude, DeepSeek, Ollama)',
+    desc: 'Cấu hình đường link Base URL, lựa chọn Model, Prompt và điều phối AI Agent tự động hóa',
     iconKey: 'ai',
     categoryGroup: 'ai_finance',
     status: 'NATIVE',
-    credentialKey: 'OPENAI_API_KEY',
-    credentialTitle: 'AI Provider API Key (OpenAI / Gemini / Claude)',
-    notice: 'Không có Trigger chung cho mọi yêu cầu LLM; hãy kết hợp với Webhook Trigger, Chat Trigger hoặc App Trigger.',
+    credentialKey: 'OPENCODE2_API_KEY',
+    credentialTitle: 'AI Agent API Credentials',
+    notice: 'Nhập đường link Base URL và lựa chọn model phù hợp (mặc định crouton-alpha-free của Opencode2 miễn phí).',
     fields: [
-      { key: 'OPENAI_API_KEY', label: 'API Key', type: 'password', placeholder: 'sk-... / AIzaSy...' },
+      { key: 'OPENCODE2_BASE_URL', label: 'Base URL (Đường link API Endpoint)', type: 'string', placeholder: 'https://opencode.ai/zen/v1' },
+      { key: 'OPENCODE2_MODEL', label: 'Lựa chọn Model', type: 'options', default: 'crouton-alpha-free', options: [
+        { name: 'crouton-alpha-free (Opencode2 Miễn phí)', value: 'crouton-alpha-free' },
+        { name: 'gpt-4o (OpenAI Omni Flagship)', value: 'gpt-4o' },
+        { name: 'gpt-4o-mini (OpenAI Fast & Cost-effective)', value: 'gpt-4o-mini' },
+        { name: 'o3-mini (OpenAI Reasoning)', value: 'o3-mini' },
+        { name: 'gemini-2.0-flash (Google Gemini Flash)', value: 'gemini-2.0-flash' },
+        { name: 'gemini-1.5-pro (Google Gemini Pro)', value: 'gemini-1.5-pro' },
+        { name: 'claude-3-5-sonnet (Anthropic Claude Sonnet)', value: 'claude-3-5-sonnet' },
+        { name: 'deepseek-chat (DeepSeek V3)', value: 'deepseek-chat' },
+        { name: 'deepseek-reasoner (DeepSeek R1)', value: 'deepseek-reasoner' },
+        { name: 'llama3:latest (Local Ollama)', value: 'llama3' },
+      ] },
+      { key: 'OPENCODE2_API_KEY', label: 'API Key (oc_sk_... hoặc sk-...)', type: 'password', placeholder: 'oc_sk_5583787331ee_...' },
     ],
     triggers: [],
     actions: [

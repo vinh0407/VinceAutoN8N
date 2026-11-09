@@ -352,9 +352,11 @@ export interface IAppIntegrationSpec {
   fields: {
     key: string;
     label: string;
-    type: 'string' | 'password';
-    placeholder: string;
+    type: 'string' | 'password' | 'options';
+    placeholder?: string;
     defaultValue?: string;
+    default?: any;
+    options?: { name: string; value: string }[];
   }[];
   triggers: {
     id: string;

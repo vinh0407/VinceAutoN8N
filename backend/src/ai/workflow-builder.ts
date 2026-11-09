@@ -152,7 +152,8 @@ export class AIWorkflowBuilder {
   static async buildFromPrompt(
     prompt: string,
     existingWorkflow?: IWorkflow,
-    provider: string = 'opencode2'
+    provider: string = 'opencode2',
+    customOptions?: { baseUrl?: string; model?: string; apiKey?: string }
   ): Promise<IAIBuildPlan> {
     const trimmed = prompt.trim();
 
@@ -218,9 +219,9 @@ QUY TẮC SINH WORKFLOW TỰ ĐỘNG:
         'auto',
         provider || 'opencode2',
         {
-          model: DEFAULT_OPENCODE2_PROVIDER.defaultModel,
-          baseUrl: DEFAULT_OPENCODE2_PROVIDER.baseUrl,
-          apiKey: DEFAULT_OPENCODE2_PROVIDER.apiKey,
+          model: customOptions?.model || DEFAULT_OPENCODE2_PROVIDER.defaultModel,
+          baseUrl: customOptions?.baseUrl || DEFAULT_OPENCODE2_PROVIDER.baseUrl,
+          apiKey: customOptions?.apiKey || DEFAULT_OPENCODE2_PROVIDER.apiKey,
           temperature: 0.25,
         }
       );
