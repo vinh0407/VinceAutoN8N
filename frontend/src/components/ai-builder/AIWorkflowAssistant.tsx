@@ -37,7 +37,7 @@ import {
 } from '../../data/agentNodePrompts';
 
 interface AIWorkflowAssistantProps {
-  currentWorkflow: IWorkflow;
+  currentWorkflow?: IWorkflow | null;
   onApplyWorkflow: (workflow: IWorkflow) => void;
   onClose: () => void;
   selectedChatItem?: IAIChatHistoryItem | null;
@@ -110,7 +110,7 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
     try {
       const res = await axios.post('/api/ai/build', {
         prompt: promptToRun,
-        existingWorkflow: currentWorkflow,
+        existingWorkflow: currentWorkflow || { id: 'wf_draft', name: 'Bản vẽ mới', nodes: [], connections: [] },
         provider: 'opencode2',
       });
 
@@ -122,7 +122,7 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
           const newChat: IAIChatHistoryItem = {
             id: `chat_${Date.now()}`,
             title: promptToRun.slice(0, 46) + (promptToRun.length > 46 ? '...' : ''),
-            projectName: currentWorkflow.name || 'Dự án hiện tại',
+            projectName: currentWorkflow?.name || 'Dự án hiện tại',
             timeAgo: 'Vừa xong',
             prompt: promptToRun,
             responseSummary: plan.summary,
@@ -131,7 +131,7 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
           const newLog: IAIAgentProjectLog = {
             id: `log_${Date.now()}`,
             title: `[${OPENCODE2_PROVIDER_CONFIG.providerName} • ${OPENCODE2_PROVIDER_CONFIG.models}] ${plan.summary.slice(0, 36)}...`,
-            projectName: currentWorkflow.name || 'Dự án hiện tại',
+            projectName: currentWorkflow?.name || 'Dự án hiện tại',
             agentName: `Opencode2 (${OPENCODE2_PROVIDER_CONFIG.models})`,
             status: 'success',
             duration: '260ms',

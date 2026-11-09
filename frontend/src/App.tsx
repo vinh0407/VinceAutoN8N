@@ -1023,12 +1023,25 @@ export function App() {
           )}
 
           {/* AI Workflow Assistant Sidebar */}
-          {showAIAssistant && currentWorkflow && (
+          {showAIAssistant && (
             <AIWorkflowAssistant
               currentWorkflow={currentWorkflow}
-              onApplyWorkflow={(wf) => {
-                loadWorkflow(wf);
-                handleSaveWorkflow();
+              onApplyWorkflow={async (wf) => {
+                const targetProjId = selectedProjectId || projects[0]?.id || 'proj_ai';
+                const wfWithProj: IWorkflow = {
+                  ...wf,
+                  projectId: targetProjId,
+                };
+                loadWorkflow(wfWithProj);
+                try {
+                  const res = await axios.post('/api/workflows', wfWithProj);
+                  if (res.data?.success) {
+                    setCurrentWorkflow(res.data.workflow);
+                    await refreshProjects();
+                  }
+                } catch {
+                  setCurrentWorkflow(wfWithProj);
+                }
               }}
               onClose={() => setShowAIAssistant(false)}
               selectedChatItem={selectedChatItem}
