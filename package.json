@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "concurrently \"pnpm --filter vinceauto-backend dev\" \"pnpm --filter vinceauto-frontend dev\"",
     "build": "pnpm --filter vinceauto-backend build && pnpm --filter vinceauto-frontend build",
+    "build:backend": "pnpm --filter vinceauto-backend build",
     "start": "node backend/dist/index.js",
     "dev:backend": "pnpm --filter vinceauto-backend dev",
     "dev:frontend": "pnpm --filter vinceauto-frontend dev"

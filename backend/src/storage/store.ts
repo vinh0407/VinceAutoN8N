@@ -30,7 +30,7 @@ export class WorkflowStore {
   private executionHistory: IExecutionSummary[] = [];
 
   constructor(dataDir?: string) {
-    this.dataDir = dataDir || path.resolve(process.cwd(), 'data');
+    this.dataDir = dataDir || process.env.DATA_DIR || path.resolve(process.cwd(), 'data');
     if (!fs.existsSync(this.dataDir)) {
       fs.mkdirSync(this.dataDir, { recursive: true });
     }

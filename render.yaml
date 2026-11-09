@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: vinceauto-backend
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: pnpm install && pnpm run build:backend
+    startCommand: node backend/dist/index.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: PORT
+        value: 10000
+      - key: DATA_DIR
+        value: ./data
+      - key: OPENCODE2_BASE_URL
+        value: https://opencode.ai/zen/v1
+      - key: OPENCODE2_MODEL
+        value: crouton-alpha-free
+      - key: OPENCODE2_API_KEY
+        sync: false
