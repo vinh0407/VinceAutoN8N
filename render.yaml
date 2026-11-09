@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     region: singapore
-    buildCommand: pnpm install && pnpm run build:backend
+    buildCommand: pnpm install && pnpm run build
     startCommand: node backend/dist/index.js
     healthCheckPath: /health
     autoDeploy: true

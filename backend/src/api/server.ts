@@ -475,19 +475,179 @@ export function createServer() {
     });
   });
 
-  // 9. Static Frontend Serving (in production)
+  // 9. API Overview
+  app.get(['/api', '/api/'], (req, res) => {
+    res.json({
+      status: 'online',
+      service: 'vinceauto-backend-api',
+      user: 'Ưng Đỗ Thế Vinh',
+      version: '1.0.0',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      endpoints: [
+        '/',
+        '/health',
+        '/ping',
+        '/api/nodes',
+        '/api/projects',
+        '/api/workflows',
+        '/api/credentials',
+        '/api/tasks',
+        '/api/tables',
+        '/api/ai/build',
+        '/webhook/:path',
+      ],
+    });
+  });
+
+  // 10. Static Frontend Serving or Dedicated API Status Dashboard
   const candidateDirs = [
     path.resolve(process.cwd(), 'frontend/dist'),
     path.resolve(process.cwd(), '../frontend/dist'),
+    path.resolve(process.cwd(), '../../frontend/dist'),
   ];
-  const frontendDist = candidateDirs.find((d) => fs.existsSync(d));
+  const frontendDist = candidateDirs.find((d) => fs.existsSync(d) && fs.existsSync(path.join(d, 'index.html')));
+
   if (frontendDist) {
     app.use(express.static(frontendDist));
     app.get('*', (req, res, next) => {
-      if (req.path.startsWith('/api') || req.path.startsWith('/webhook')) return next();
+      if (req.path.startsWith('/api') || req.path.startsWith('/webhook') || req.path === '/health' || req.path === '/ping') {
+        return next();
+      }
       res.sendFile(path.join(frontendDist, 'index.html'));
     });
+  } else {
+    // When frontend is not built or backend runs standalone (e.g. Render backend only)
+    app.get('/', (req, res) => {
+      if (req.headers.accept?.includes('application/json')) {
+        return res.json({
+          status: 'online',
+          name: 'VinceAuto Automation & AI Agent API',
+          user: 'Ưng Đỗ Thế Vinh',
+          version: '1.0.0',
+          uptime: process.uptime(),
+          health: '/health',
+          ping: '/ping',
+          api: '/api',
+        });
+      }
+
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(`<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VinceAuto Backend API - Online</title>
+  <style>
+    body {
+      background-color: #121214;
+      color: #e6e8ec;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    .card {
+      background-color: #1a1a1e;
+      border: 1px solid #2d2d34;
+      border-radius: 16px;
+      max-width: 640px;
+      width: 100%;
+      padding: 32px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 14px;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #34d399;
+      box-shadow: 0 0 10px #34d399;
+    }
+    h1 { font-size: 22px; margin: 18px 0 8px; font-weight: 700; color: #fff; }
+    p { font-size: 13px; color: #9ca3af; line-height: 1.6; margin: 0 0 20px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: #232328;
+      border: 1px solid #32323a;
+      color: #e6e8ec;
+      text-decoration: none;
+      font-size: 12px;
+      font-family: monospace;
+      transition: all 0.2s;
+    }
+    .btn:hover { background: #2b2b32; border-color: #454550; color: #fff; transform: translateY(-1px); }
+    .tag { font-size: 10px; color: #60a5fa; font-family: sans-serif; }
+    .footer { margin-top: 24px; padding-top: 16px; border-top: 1px solid #282830; font-size: 11px; color: #71717a; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge"><div class="pulse"></div> Backend API Đang Hoạt Động</div>
+    <h1>VinceAuto API Service ⚡</h1>
+    <p>Máy chủ tự động hóa quy trình & điều phối AI Agent của <strong>Ưng Đỗ Thế Vinh</strong> đang trực tuyến và sẵn sàng xử lý yêu cầu.</p>
+    <div class="grid">
+      <a href="/health" class="btn"><span>/health</span> <span class="tag">Trạng thái</span></a>
+      <a href="/ping" class="btn"><span>/ping</span> <span class="tag">Keep-Alive</span></a>
+      <a href="/api/nodes" class="btn"><span>/api/nodes</span> <span class="tag">400+ Nodes</span></a>
+      <a href="/api/workflows" class="btn"><span>/api/workflows</span> <span class="tag">Quy trình</span></a>
+      <a href="/api/projects" class="btn"><span>/api/projects</span> <span class="tag">Dự án</span></a>
+      <a href="/api/credentials" class="btn"><span>/api/credentials</span> <span class="tag">API Keys</span></a>
+    </div>
+    <div class="footer">VinceAuto Platform v1.0.0 • Ưng Đỗ Thế Vinh</div>
+  </div>
+</body>
+</html>`);
+    });
   }
+
+  // 11. Catch-all 404 Handler (prevents raw "Cannot GET ...")
+  app.use((req, res) => {
+    if (req.headers.accept?.includes('text/html')) {
+      res.status(404).setHeader('Content-Type', 'text/html; charset=utf-8').send(`
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>404 - VinceAuto</title>
+  <style>body{background:#121214;color:#e6e8ec;font-family:sans-serif;padding:60px 20px;text-align:center;}a{color:#60a5fa;text-decoration:none;}a:hover{text-decoration:underline;}code{background:#222;padding:2px 6px;border-radius:4px;color:#f87171;}</style>
+</head>
+<body>
+  <h2>404 — Tuyến đường không tồn tại</h2>
+  <p>Đường dẫn <code>${req.method} ${req.originalUrl}</code> không có trên hệ thống.</p>
+  <p><a href="/">Quay về Trang chủ Backend</a> • <a href="/health">Kiểm tra /health</a> • <a href="/api">Danh sách /api</a></p>
+</body>
+</html>`);
+    } else {
+      res.status(404).json({
+        success: false,
+        error: `Cannot ${req.method} ${req.originalUrl}`,
+        message: 'Tuyến đường không tồn tại trên VinceAuto Backend API',
+        availableEndpoints: ['/', '/health', '/ping', '/api', '/api/nodes', '/api/workflows', '/api/projects', '/webhook/:path'],
+      });
+    }
+  });
 
   return { app, server, broadcast };
 }
