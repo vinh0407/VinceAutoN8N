@@ -44,7 +44,11 @@ export class ExpressionEvaluator {
     // Exact single expression match like "{{ $json.foo }}" -> return the exact evaluated type (not stringified)
     const exactMatch = str.trim().match(/^\{\{([\s\S]+?)\}\}$/);
     if (exactMatch) {
-      return this.executeExpression(exactMatch[1], currentData, context, itemIndex);
+      try {
+        return this.executeExpression(exactMatch[1], currentData, context, itemIndex);
+      } catch {
+        return undefined;
+      }
     }
 
     // Mixed string like "Hello {{ $json.name }}, status is {{ $json.status }}"

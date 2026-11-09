@@ -106,11 +106,27 @@ export class VinceModelRouterNode implements INodeType {
       const evaluatedSystem = ExpressionEvaluator.evaluate(node.parameters.systemPrompt, item, context, i);
       const strategy = node.parameters.strategy || 'auto';
 
-      const messages: any[] = [];
-      if (evaluatedSystem) {
-        messages.push({ role: 'system', content: evaluatedSystem });
+      const incomingUserText =
+        item.json.userQuery ||
+        item.json.text ||
+        item.json.message?.text ||
+        item.json.prompt ||
+        '';
+
+      let promptToSend = evaluatedPrompt;
+      if (!promptToSend || promptToSend.trim() === '') {
+        promptToSend = incomingUserText || 'Xin chào AI Agent!';
       }
-      messages.push({ role: 'user', content: evaluatedPrompt });
+
+      const defaultSystem =
+        'Bạn là AI Agent trợ lý thông minh trên Telegram của Ưng Đỗ Thế Vinh. Hãy trả lời câu hỏi của người dùng một cách chính xác, thân thiện và hữu ích.';
+      const systemToSend = evaluatedSystem || defaultSystem;
+
+      const messages: any[] = [];
+      if (systemToSend) {
+        messages.push({ role: 'system', content: systemToSend });
+      }
+      messages.push({ role: 'user', content: promptToSend });
 
       const baseUrl = node.parameters.baseUrl || process.env.OPENCODE2_BASE_URL || 'https://opencode.ai/zen/v1';
       const selectedModel = node.parameters.model === 'custom' && node.parameters.customModel
@@ -125,10 +141,20 @@ export class VinceModelRouterNode implements INodeType {
         apiKey,
       });
 
+      const chatId = item.json.chatId || item.json.message?.chat?.id || item.json.message?.from?.id || 118229444;
+      const replyToMessageId = item.json.replyToId || item.json.messageId || item.json.message?.message_id || 142;
+      const sender = item.json.sender || item.json.message?.from?.first_name || 'Ưng Đỗ Thế Vinh';
+
       results.push({
         json: {
           ...item.json,
+          chatId,
+          replyToMessageId,
+          sender,
+          userQuestion: promptToSend,
           aiResponse: response.text,
+          response: response.text,
+          text: response.text,
           aiModel: response.model,
           aiProvider: response.provider,
           aiDurationMs: response.durationMs,

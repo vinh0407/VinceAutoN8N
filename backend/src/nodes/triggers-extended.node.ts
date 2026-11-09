@@ -6,6 +6,7 @@ function createTriggerNodeClass(config: {
   icon: string;
   description: string;
   properties?: any[];
+  defaultPayloadFn?: (node: INode) => Record<string, any>;
 }): new () => INodeType {
   return class implements INodeType {
     description = {
@@ -23,19 +24,25 @@ function createTriggerNodeClass(config: {
     async execute(
       _context: IExecutionContext,
       inputData: INodeExecutionData[],
-      _node: INode
+      node: INode
     ): Promise<INodeExecutionData[]> {
-      if (inputData && inputData.length > 0) return inputData;
-      return [
-        {
-          json: {
+      const hasMeaningfulInput =
+        inputData &&
+        inputData.length > 0 &&
+        Object.keys(inputData[0]?.json || {}).length > 0;
+
+      if (hasMeaningfulInput) return inputData;
+
+      const payload = config.defaultPayloadFn
+        ? config.defaultPayloadFn(node)
+        : {
             triggeredAt: new Date().toISOString(),
             triggerType: config.name,
             event: 'SAMPLE_EVENT',
             data: { test: true },
-          },
-        },
-      ];
+          };
+
+      return [{ json: payload }];
     }
   };
 }
@@ -50,16 +57,57 @@ export const TriggerAppEventNode = createTriggerNodeClass({
       name: 'app',
       displayName: 'Ứng Dụng (App)',
       type: 'options',
-      default: 'zalo_oa',
+      default: 'telegram',
       options: [
+        { name: 'Telegram Bot (Có tin nhắn người dùng / nhóm)', value: 'telegram' },
         { name: 'Zalo Official Account (Tin nhắn người dùng mới)', value: 'zalo_oa' },
         { name: 'Facebook Messenger (Khách hàng nhắn tin Page)', value: 'fb_messenger' },
-        { name: 'Telegram Bot (Có tin nhắn trong nhóm / kênh)', value: 'telegram' },
         { name: 'Gmail (Có email mới khớp bộ lọc)', value: 'gmail' },
       ],
       required: true,
     },
   ],
+  defaultPayloadFn: (node) => {
+    const app = node.parameters?.app || 'telegram';
+    if (app === 'telegram') {
+      return {
+        update_id: 894120394,
+        chatId: 118229444,
+        text: 'Xin chào AI Agent, hãy tư vấn quy trình tự động hóa cho tôi!',
+        sender: 'Ưng Đỗ Thế Vinh',
+        username: 'ungdothevinh',
+        messageId: 142,
+        message: {
+          message_id: 142,
+          from: {
+            id: 118229444,
+            is_bot: false,
+            first_name: 'Thế Vinh',
+            last_name: 'Ưng Đỗ',
+            username: 'ungdothevinh',
+            language_code: 'vi',
+          },
+          chat: {
+            id: 118229444,
+            first_name: 'Thế Vinh',
+            last_name: 'Ưng Đỗ',
+            username: 'ungdothevinh',
+            type: 'private',
+          },
+          date: Math.floor(Date.now() / 1000),
+          text: 'Xin chào AI Agent, hãy tư vấn quy trình tự động hóa cho tôi!',
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
+    return {
+      triggeredAt: new Date().toISOString(),
+      triggerType: 'trigger.appEvent',
+      app,
+      event: 'USER_MESSAGE',
+      data: { user: 'Ưng Đỗ Thế Vinh', text: 'Tin nhắn kiểm tra từ VinceAuto' },
+    };
+  },
 });
 
 export const TriggerEcommerceNode = createTriggerNodeClass({
@@ -132,8 +180,37 @@ export const TriggerChatNode = createTriggerNodeClass({
   name: 'trigger.chat',
   displayName: 'AI Chat Trigger',
   icon: 'MessageSquare',
-  description: 'Kích hoạt khi người dùng gửi tin nhắn trò chuyện vào khung Chat AI hoặc trợ lý ảo',
+  description: 'Kích hoạt khi người dùng gửi tin nhắn trò chuyện vào khung Chat AI hoặc trợ lý ảo Telegram',
   properties: [],
+  defaultPayloadFn: (_node) => ({
+    update_id: 894120394,
+    chatId: 118229444,
+    text: 'Xin chào AI Agent, hãy tư vấn giải pháp tự động hóa giúp tôi!',
+    sender: 'Ưng Đỗ Thế Vinh',
+    username: 'ungdothevinh',
+    messageId: 142,
+    message: {
+      message_id: 142,
+      from: {
+        id: 118229444,
+        is_bot: false,
+        first_name: 'Thế Vinh',
+        last_name: 'Ưng Đỗ',
+        username: 'ungdothevinh',
+        language_code: 'vi',
+      },
+      chat: {
+        id: 118229444,
+        first_name: 'Thế Vinh',
+        last_name: 'Ưng Đỗ',
+        username: 'ungdothevinh',
+        type: 'private',
+      },
+      date: Math.floor(Date.now() / 1000),
+      text: 'Xin chào AI Agent, hãy tư vấn giải pháp tự động hóa giúp tôi!',
+    },
+    timestamp: new Date().toISOString(),
+  }),
 });
 
 export const TriggerDatabaseNode = createTriggerNodeClass({

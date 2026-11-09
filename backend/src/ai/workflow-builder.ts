@@ -819,18 +819,20 @@ QUY TẮC SINH WORKFLOW TỰ ĐỘNG:
         },
       };
       steps.push('Thu thập dữ liệu khách hàng ngay khi biểu mẫu Webform được gửi (trigger.form)');
-    } else if (p.includes('chat') || p.includes('hội thoại') || p.includes('cskh') || p.includes('tư vấn')) {
+    } else if (p.includes('telegram') || p.includes('tele') || p.includes('botchat') || p.includes('chat') || p.includes('hội thoại') || p.includes('cskh') || p.includes('tư vấn')) {
+      const isTelegramChat = p.includes('telegram') || p.includes('tele') || p.includes('botchat') || p.includes('bot');
       triggerNode = {
         id: 'node_trigger_chat',
-        name: 'Chat Trigger: Tin nhắn khách hàng mới [T/W]',
+        name: isTelegramChat ? 'Telegram Trigger: Tin nhắn người dùng [Webhook/API]' : 'Chat Trigger: Tin nhắn khách hàng mới [T/W]',
         type: 'trigger.chat',
         position: nextPos(),
         parameters: {
-          channel: p.includes('telegram') ? 'telegram' : p.includes('zalo') ? 'zalo' : 'multichannel_chat',
-          welcomeMessage: 'Xin chào! AI Agent Opencode2 sẵn sàng hỗ trợ bạn.',
+          channel: isTelegramChat ? 'telegram' : 'multichannel_chat',
+          chatId: '@ungdothevinh',
+          welcomeMessage: 'Xin chào Ưng Đỗ Thế Vinh! AI Agent sẵn sàng tiếp nhận câu hỏi của bạn.',
         },
       };
-      steps.push('Lắng nghe tin nhắn khách hàng theo thời gian thực qua Chat Trigger (trigger.chat)');
+      steps.push(isTelegramChat ? 'Lắng nghe tin nhắn Telegram gửi tới Bot (qua API hoặc Webhook và @id)' : 'Lắng nghe tin nhắn khách hàng theo thời gian thực qua Chat Trigger (trigger.chat)');
     } else if (p.includes('webhook') || p.includes('callback') || p.includes('lead')) {
       triggerNode = {
         id: 'node_trigger_webhook',
@@ -916,22 +918,30 @@ QUY TẮC SINH WORKFLOW TỰ ĐỘNG:
     }
 
     if (p.includes('chuẩn hóa') || p.includes('set') || p.includes('edit field') || p.includes('biến đổi') || nodes.length <= 2) {
+      const isTelegramChat = p.includes('telegram') || p.includes('tele') || p.includes('botchat');
       nodes.push({
         id: 'node_transform_set',
-        name: 'Edit Fields (Set): Chuẩn hóa Schema dữ liệu',
+        name: isTelegramChat ? 'Edit Fields: Chuẩn hóa Schema & Trích xuất câu hỏi' : 'Edit Fields (Set): Chuẩn hóa Schema dữ liệu',
         type: 'transform.editFields',
         position: nextPos(),
         parameters: {
           mode: 'manual',
-          fields: {
-            source: 'VinceAuto_Pipeline',
-            aiProvider: 'Opencode2 (crouton-alpha-free)',
-            timestamp: '{{ new Date().toISOString() }}',
-          },
+          fields: isTelegramChat
+            ? {
+                userQuery: '{{ $json.text || $json.message.text }}',
+                chatId: '{{ $json.chatId || $json.message.chat.id || 118229444 }}',
+                messageId: '{{ $json.messageId || $json.message.message_id || 142 }}',
+                sender: '{{ $json.sender || $json.message.from.first_name || "Ưng Đỗ Thế Vinh" }}',
+              }
+            : {
+                source: 'VinceAuto_Pipeline',
+                aiProvider: 'Opencode2 (crouton-alpha-free)',
+                timestamp: '{{ new Date().toISOString() }}',
+              },
           keepOnlySet: false,
         },
       });
-      steps.push('Chuẩn hóa các trường dữ liệu đầu vào bằng nút Edit Fields (transform.editFields)');
+      steps.push(isTelegramChat ? 'Chuẩn hóa dữ liệu tin nhắn: Trích xuất nội dung câu hỏi, Chat ID (@id) và Message ID' : 'Chuẩn hóa các trường dữ liệu đầu vào bằng nút Edit Fields (transform.editFields)');
     }
 
     if (p.includes('trùng') || p.includes('duplicate')) {
@@ -966,6 +976,7 @@ QUY TẮC SINH WORKFLOW TỰ ĐỘNG:
       });
       steps.push('Điều phối tổ hợp Multi-Agent (Planner, Researcher, Critic) trên model Opencode2 crouton-alpha-free (vince.agentManager)');
     } else {
+      const isTelegramChat = p.includes('telegram') || p.includes('tele') || p.includes('botchat');
       nodes.push({
         id: 'node_ai_opencode2',
         name: 'AI Agent Opencode2 (crouton-alpha-free)',
@@ -977,10 +988,15 @@ QUY TẮC SINH WORKFLOW TỰ ĐỘNG:
           baseUrl: 'https://opencode.ai/zen/v1',
           model: 'crouton-alpha-free',
           strategy: 'auto',
-          prompt: `Bạn là AI Agent tự động hóa của VinceAuto. Hãy phân tích dữ liệu sau và tạo nội dung xử lý tối ưu cho yêu cầu "${prompt}":\n{{ JSON.stringify($json) }}`,
+          prompt: isTelegramChat
+            ? '{{ $json.userQuery || $json.text || $json.message.text }}'
+            : `Bạn là AI Agent tự động hóa của VinceAuto. Hãy phân tích dữ liệu sau và tạo nội dung xử lý tối ưu cho yêu cầu "${prompt}":\n{{ JSON.stringify($json) }}`,
+          systemPrompt: isTelegramChat
+            ? 'Bạn là AI Agent trợ lý thông minh trên Telegram của Ưng Đỗ Thế Vinh. Hãy trả lời câu hỏi của người dùng một cách chính xác, thân thiện và hữu ích.'
+            : 'Bạn là chuyên gia tự động hóa của VinceAuto.',
         },
       });
-      steps.push('Phân tích, suy luận và sinh kết quả tự động bằng AI Agent Opencode2 - model crouton-alpha-free (vince.modelRouter)');
+      steps.push(isTelegramChat ? 'Gọi API AI Agent Opencode2 (crouton-alpha-free) để suy luận câu trả lời cho người dùng' : 'Phân tích, suy luận và sinh kết quả tự động bằng AI Agent Opencode2 - model crouton-alpha-free (vince.modelRouter)');
     }
 
     // 5. DESTINATION / APP ACTIONS (Google Sheets, Drive, Gmail, CRM, Database, Payment, Telegram, Zalo, Slack, Discord)
@@ -1200,27 +1216,31 @@ QUY TẮC SINH WORKFLOW TỰ ĐỘNG:
       steps.push('Gửi thông báo qua Discord Webhook (vince.discord.sendWebhook)');
     }
 
-    // Default or explicitly requested Telegram notification at the end
+    // Default or explicitly requested Telegram notification / AI bot reply at the end
     if (
       p.includes('telegram') ||
       p.includes('thông báo') ||
       p.includes('báo cáo') ||
       (!p.includes('zalo') && !p.includes('gmail') && !p.includes('slack') && !p.includes('discord'))
     ) {
+      const isTelegramChat = p.includes('telegram') || p.includes('tele') || p.includes('botchat');
       nodes.push({
         id: 'node_telegram_notify',
-        name: 'Telegram: Send Message',
+        name: isTelegramChat ? 'Telegram: Phản hồi tin nhắn (Send Message)' : 'Telegram: Send Message',
         type: 'vince.telegram',
         position: nextPos(),
         parameters: {
           resource: 'message',
           operation: 'sendMessage',
-          chatId: '-100123456789',
-          message: `🤖 [VinceAuto AI Agent - Opencode2 crouton-alpha-free]\n✅ Hoàn tất quy trình: ${prompt}\n📊 Kết quả: {{ $json.text || $json.data || "Thành công" }}`,
+          chatId: isTelegramChat ? '{{ $json.chatId }}' : '@ungdothevinh',
+          message: isTelegramChat
+            ? '{{ $json.aiResponse || $json.text }}'
+            : `🤖 [VinceAuto AI Agent - Opencode2 crouton-alpha-free]\n✅ Hoàn tất quy trình: ${prompt}\n📊 Kết quả: {{ $json.text || $json.data || "Thành công" }}`,
+          replyToMessageId: isTelegramChat ? '{{ $json.messageId || $json.replyToId }}' : undefined,
           parseMode: 'HTML',
         },
       });
-      steps.push('Gửi thông báo kết quả tức thời về Telegram Bot (vince.telegram)');
+      steps.push(isTelegramChat ? 'Tự động gọi API Telegram để phản hồi trực tiếp câu trả lời của AI Agent về @id của người gửi' : 'Gửi thông báo kết quả tức thời về Telegram Bot (vince.telegram)');
     }
 
     // Wire sequential connections

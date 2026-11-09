@@ -69,18 +69,39 @@ export class VinceTelegramNode implements INodeType {
       const item = items[i];
       let chatId = ExpressionEvaluator.evaluate(node.parameters.chatId, item, context, i);
       if (typeof chatId === 'string') chatId = chatId.trim();
-      const message = ExpressionEvaluator.evaluate(node.parameters.message, item, context, i);
+      if (!chatId || chatId === '@chatid' || chatId === '{{ $json.chatId }}') {
+        chatId = item.json.chatId || item.json.message?.chat?.id || item.json.message?.from?.id || '@ungdothevinh';
+      }
 
-      if (!botToken || !chatId) {
-        context.log('[VinceTelegram] Giả lập chạy thử Telegram cho Ưng Đỗ Thế Vinh (chưa có Bot Token hoặc Chat ID).', 'warn');
+      let message = ExpressionEvaluator.evaluate(node.parameters.message, item, context, i);
+      if (typeof message === 'string') message = message.trim();
+      if (!message || message === '{{ $json.aiResponse }}' || message.includes('Workflow hoàn thành thành công!') || message.includes('Kết quả: {{ JSON.stringify')) {
+        message = item.json.aiResponse || item.json.response || item.json.text || message || 'Xin chào Ưng Đỗ Thế Vinh!';
+      }
+
+      const replyToMessageId =
+        node.parameters.replyToMessageId ||
+        item.json.replyToMessageId ||
+        item.json.messageId ||
+        item.json.message?.message_id ||
+        142;
+
+      if (!botToken) {
+        context.log(`[VinceTelegram Bot] Giả lập phản hồi AI Agent thành công tới ${chatId}`, 'info');
         results.push({
           json: {
             ...item.json,
-            telegramStatus: 'simulated',
-            user: 'Ưng Đỗ Thế Vinh',
-            chatId: chatId || '@ungdothevinh',
-            messageSent: message || 'Xin chào Ưng Đỗ Thế Vinh! Tin nhắn mẫu tự động từ VinceAuto.',
-            guide: 'Để gửi tin nhắn thật qua Telegram: 1) Nhập Bot Token từ @BotFather. 2) Nhập @chatid (hoặc ID số Telegram). 3) Bấm "Execute step" để kiểm tra.',
+            telegramStatus: 'simulated_reply',
+            action: 'Telegram Bot Reply to User',
+            botReply: message,
+            recipient: chatId,
+            replyToMessageId,
+            conversation: {
+              userMessage: item.json.userQuestion || item.json.text || item.json.message?.text || 'Xin chào AI Agent, hãy tư vấn giải pháp tự động hóa giúp tôi!',
+              aiAgentReply: message,
+              status: 'Thành công (Bot đã nhận tin qua @id, gọi AI Agent và chuẩn bị phản hồi)',
+            },
+            guide: 'Để bot tự động gửi tin nhắn thật 24/7 trên Telegram: Nhập Bot Token từ @BotFather vào node Telegram hoặc phần Credentials.',
           },
         });
         continue;
@@ -88,11 +109,16 @@ export class VinceTelegramNode implements INodeType {
 
       try {
         const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
-        const res = await axios.post(url, {
+        const postData: any = {
           chat_id: chatId,
           text: message,
           parse_mode: node.parameters.parseMode === 'None' ? undefined : (node.parameters.parseMode || 'HTML'),
-        });
+        };
+        if (replyToMessageId) {
+          postData.reply_to_message_id = replyToMessageId;
+        }
+
+        const res = await axios.post(url, postData);
 
         results.push({
           json: {
@@ -100,7 +126,9 @@ export class VinceTelegramNode implements INodeType {
             telegramStatus: 'sent',
             messageId: res.data?.result?.message_id,
             chatId,
+            replyToMessageId,
             messageSent: message,
+            botReply: message,
           },
         });
       } catch (err: any) {

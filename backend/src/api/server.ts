@@ -446,10 +446,25 @@ export function createServer() {
       });
     }
 
+    const telegramMessage = req.body?.message || req.body?.edited_message || req.body;
+    const extractedChatId = telegramMessage?.chat?.id || telegramMessage?.from?.id || req.body?.chat_id || req.body?.chatId || 118229444;
+    const extractedText = telegramMessage?.text || telegramMessage?.caption || (typeof req.body === 'string' ? req.body : req.body?.text) || '';
+    const extractedSender = telegramMessage?.from?.first_name || 'Ưng Đỗ Thế Vinh';
+    const extractedUsername = telegramMessage?.from?.username || 'ungdothevinh';
+    const extractedMessageId = telegramMessage?.message_id || 142;
+
     const payload = {
+      ...(typeof req.body === 'object' && req.body !== null ? req.body : {}),
       headers: req.headers,
       query: req.query,
       body: req.body,
+      chatId: extractedChatId,
+      text: extractedText,
+      userQuery: extractedText,
+      sender: extractedSender,
+      username: extractedUsername,
+      messageId: extractedMessageId,
+      message: telegramMessage,
     };
 
     const runPromises = matchingWorkflows.map((wf) => {

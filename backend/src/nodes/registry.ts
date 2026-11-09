@@ -1,4 +1,5 @@
 import { INodeType } from '../engine/types.js';
+import { ExpressionEvaluator } from '../engine/expression.js';
 import { TriggerManualNode } from './trigger-manual.node.js';
 import { TriggerCronNode } from './trigger-cron.node.js';
 import { TriggerWebhookNode } from './trigger-webhook.node.js';
@@ -43,28 +44,8 @@ export class NodeRegistry {
   private nodes: Map<string, INodeType> = new Map();
 
   constructor() {
-    // 1. Core Automation & Routing
-    this.register(new TriggerManualNode());
-    this.register(new TriggerCronNode());
-    this.register(new TriggerWebhookNode());
-    this.register(new TriggerAppEventNode());
-    this.register(new TriggerEcommerceNode());
-    this.register(new TriggerPaymentNode());
-    this.register(new TriggerFormNode());
-    this.register(new TriggerChatNode());
-    this.register(new TriggerDatabaseNode());
-    this.register(new TriggerSocialMediaNode());
-    this.register(new TriggerGitNode());
-    this.register(new TriggerErrorNode());
-
-    this.register(new AutomationHttpNode());
-    this.register(new AutomationCodeNode());
-    this.register(new AutomationFilterNode());
-    this.register(new VinceModelRouterNode());
-    this.register(new VinceAgentManagerNode());
-    this.register(new VinceScraperNode());
-    this.register(new VinceTelegramNode());
-    this.register(new VinceZoneNode());
+    // 1. Register Full 10 AI Groups & Vince Proprietary Nodes Library first
+    registerAllAiNodes(this);
 
     // 2. Register Activepieces & Custom Ecosystem Pieces
     const pieceCollections = [
@@ -89,8 +70,28 @@ export class NodeRegistry {
       }
     }
 
-    // 3. Register Full 10 AI Groups & Vince Proprietary Nodes Library
-    registerAllAiNodes(this);
+    // 3. Register Core Automation, Triggers & Vince Specialized Processing Nodes (Top Priority)
+    this.register(new TriggerManualNode());
+    this.register(new TriggerCronNode());
+    this.register(new TriggerWebhookNode());
+    this.register(new TriggerAppEventNode());
+    this.register(new TriggerEcommerceNode());
+    this.register(new TriggerPaymentNode());
+    this.register(new TriggerFormNode());
+    this.register(new TriggerChatNode());
+    this.register(new TriggerDatabaseNode());
+    this.register(new TriggerSocialMediaNode());
+    this.register(new TriggerGitNode());
+    this.register(new TriggerErrorNode());
+
+    this.register(new AutomationHttpNode());
+    this.register(new AutomationCodeNode());
+    this.register(new AutomationFilterNode());
+    this.register(new VinceModelRouterNode());
+    this.register(new VinceAgentManagerNode());
+    this.register(new VinceScraperNode());
+    this.register(new VinceTelegramNode());
+    this.register(new VinceZoneNode());
   }
 
   register(nodeType: INodeType) {
@@ -118,6 +119,19 @@ export class NodeRegistry {
       async execute(context, inputData, node) {
         const items = inputData.length > 0 ? inputData : [{ json: {} }];
         const params = node.parameters || {};
+
+        // Dedicated handler for transform.editFields / transform.set
+        if (name === 'transform.editFields' || name === 'transform.set') {
+          return items.map((item, idx) => {
+            const resultJson = params.keepOnlySet ? {} : { ...item.json };
+            const fieldsObj = typeof params.fields === 'object' && params.fields !== null ? params.fields : {};
+            for (const [k, v] of Object.entries(fieldsObj)) {
+              resultJson[k] = ExpressionEvaluator.evaluate(v, item, context, idx);
+            }
+            return { json: resultJson };
+          });
+        }
+
         context.log(
           `[VinceAuto Universal Adapter] Executing node "${node.name}" (${name}) with resource=${params.resource || 'default'}, operation=${params.operation || params.event || 'execute'}`
         );
