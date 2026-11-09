@@ -612,8 +612,9 @@ export class WorkflowStore {
           type: 'vince.telegram',
           position: [980, 240],
           parameters: {
-            chatId: '',
-            message: '🚀 [VinceAuto Daily Tech Brief]\n{{ $json.aiResponse }}',
+            botToken: '',
+            chatId: '@ungdothevinh',
+            message: '🚀 [VinceAuto Daily Tech Brief - Ưng Đỗ Thế Vinh]\n{{ $json.aiResponse }}',
             parseMode: 'HTML',
           },
         },

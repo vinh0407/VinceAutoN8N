@@ -348,12 +348,26 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
 
   const handleLoadMockData = () => {
     const sample = appCatalog?.sampleOutput || {
-      id: 'evt_20261109_001',
+      update_id: 894120394,
       message: {
         message_id: 142,
-        from: { id: 581920391, first_name: 'Minh', username: 'minh_vn' },
-        chat: { id: 581920391, type: 'private' },
-        text: 'Dữ liệu mẫu giả lập (Mock Data) để kéo thả vào tham số',
+        from: {
+          id: 118229444,
+          is_bot: false,
+          first_name: 'Thế Vinh',
+          last_name: 'Ưng Đỗ',
+          username: 'ungdothevinh',
+          language_code: 'vi',
+        },
+        chat: {
+          id: 118229444,
+          first_name: 'Thế Vinh',
+          last_name: 'Ưng Đỗ',
+          username: 'ungdothevinh',
+          type: 'private',
+        },
+        date: 1731142800,
+        text: 'Xin chào Ưng Đỗ Thế Vinh! Bạn chỉ cần điền Bot Token (API) từ @BotFather và @chatid để gửi tin nhắn tự động. Kéo thả {{ $json.message.text }} vào ô Parameters ở giữa để sử dụng dữ liệu này.',
       },
       timestamp: new Date().toISOString(),
     };
@@ -417,7 +431,51 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
     ? flattenObjectToPaths(firstOutputJson)
     : [];
 
-  const properties = nodeDescription?.properties || [];
+  const rawType = (node?.data?.type || node?.type || '').toLowerCase();
+  const rawName = (node?.data?.name || node?.name || '').toLowerCase();
+  const isTelegram = appCatalog?.id === 'telegram' || rawType.includes('telegram') || rawName.includes('telegram');
+
+  const defaultTelegramProperties: any[] = [
+    {
+      name: 'botToken',
+      displayName: 'Telegram Bot Token (API từ @BotFather)',
+      type: 'string',
+      placeholder: '123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ (hoặc lưu trong Credentials)',
+    },
+    {
+      name: 'chatId',
+      displayName: 'Chat ID (@chatid hoặc ID số cá nhân/nhóm)',
+      type: 'string',
+      default: '@ungdothevinh',
+      placeholder: '@ungdothevinh hoặc 118229444',
+      required: true,
+    },
+    {
+      name: 'message',
+      displayName: 'Nội Dung Tin Nhắn (Kéo thả trường từ INPUT)',
+      type: 'code',
+      default: 'Xin chào Ưng Đỗ Thế Vinh! Kéo thả {{ $json.message.text }} từ cột INPUT vào đây để gửi.',
+      placeholder: 'Nhập nội dung hoặc kéo thả {{ $json.message.text }}...',
+      required: true,
+    },
+    {
+      name: 'parseMode',
+      displayName: 'Định Dạng Văn Bản (Parse Mode)',
+      type: 'options',
+      default: 'HTML',
+      options: [
+        { name: 'HTML', value: 'HTML' },
+        { name: 'Markdown', value: 'Markdown' },
+        { name: 'Văn bản thuần (Plain Text)', value: 'None' },
+      ],
+    },
+  ];
+
+  const properties = (nodeDescription?.properties && nodeDescription.properties.length > 0)
+    ? nodeDescription.properties
+    : isTelegram
+    ? defaultTelegramProperties
+    : [];
   const webhookUrl = `https://vinceauto.local/webhook-test/${node.id.replace(/[^a-zA-Z0-9-]/g, '')}`;
 
   return (
@@ -946,6 +1004,27 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                     </div>
                   )}
 
+                  {/* Hướng dẫn cấu hình Telegram cá nhân hóa cho Ưng Đỗ Thế Vinh */}
+                  {isTelegram && (
+                    <div className="p-3.5 rounded-lg bg-[#14232c] border border-[#1e4868] text-xs space-y-2">
+                      <div className="font-semibold text-sky-400 flex items-center space-x-1.5">
+                        <Send className="w-3.5 h-3.5 text-sky-400" />
+                        <span>Hướng dẫn thiết lập Telegram cho Ưng Đỗ Thế Vinh:</span>
+                      </div>
+                      <div className="text-zinc-300 text-[11.5px] leading-relaxed space-y-1">
+                        <div>
+                          1. <strong>Cấu hình Bot tối giản:</strong> Chỉ cần điền <strong>Bot Token (API)</strong> từ bot <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" className="text-sky-400 underline font-medium">@BotFather</a> và <strong>@chatid</strong> (nhập <code className="bg-black/50 px-1 py-0.5 rounded text-sky-200 font-mono">@ungdothevinh</code> hoặc ID số Telegram của bạn).
+                        </div>
+                        <div>
+                          2. <strong>Kéo thả tham số:</strong> Nhấp giữ chuột vào trường dữ liệu ở cột <strong>INPUT</strong> bên trái (VD: <code className="bg-black/50 px-1 py-0.5 rounded text-amber-300 font-mono">{'{{ $json.message.text }}'}</code>) rồi thả trực tiếp vào ô tham số bên dưới.
+                        </div>
+                        <div>
+                          3. <strong>Kiểm tra ngay:</strong> Bấm nút <strong>Execute step</strong> ở góc trên bên phải để kiểm tra gửi tin nhắn hoặc giả lập chạy thử.
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* 6. Node-Specific Properties (Drop-enabled for Kéo Thả!) */}
                   {properties.map((prop) => {
                     const val =
@@ -988,7 +1067,7 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                             onChange={(e) => handleFieldChange(prop.name, e.target.value)}
                             className="w-full bg-[#18181b] border border-[#34343a] rounded-md px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-[#e6e8ec]"
                           >
-                            {prop.options?.map((opt) => (
+                            {prop.options?.map((opt: any) => (
                               <option key={opt.value} value={opt.value}>
                                 {opt.name}
                               </option>

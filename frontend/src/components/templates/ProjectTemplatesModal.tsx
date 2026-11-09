@@ -188,8 +188,8 @@ function mapNodeToVinceAutoCanonical(rawNode: any, index: number): {
       parameters: {
         resource: 'message',
         operation: 'sendMessage',
-        chatId: '-100123456789',
-        message: '🤖 [VinceAuto Opencode2]: {{ $json.text || $json.summary || "Hoàn thành" }}',
+        chatId: '@ungdothevinh',
+        message: '🤖 [VinceAuto - Ưng Đỗ Thế Vinh]: {{ $json.text || $json.summary || "Hoàn thành nhiệm vụ tự động!" }}',
         parseMode: 'HTML',
         ...existingParams,
       },
@@ -610,7 +610,7 @@ const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
       { id: 'n5', name: 'Threads (Meta): Publish Post', type: 'vince.threads.action', position: [980, 260], parameters: { resource: 'Thread', operation: 'publishText', mediaType: 'TEXT' } },
       { id: 'n6', name: 'Instagram Business: Publish Reel', type: 'vince.instagram.action', position: [980, 400], parameters: { resource: 'Reels', operation: 'publishReel', shareToFeed: true } },
       { id: 'n7', name: 'YouTube & Shorts: Upload Video', type: 'vince.youtube.action', position: [1280, 240], parameters: { resource: 'Video', operation: 'uploadVideo', privacyStatus: 'public' } },
-      { id: 'n8', name: 'Telegram: Báo cáo Đăng Đa Kênh', type: 'vince.telegram', position: [1580, 240], parameters: { resource: 'message', operation: 'sendMessage', chatId: '-100123456789', message: '🚀 Đã đăng thành công nội dung lên TikTok, Threads, Instagram Reels & YouTube Shorts!' } },
+      { id: 'n8', name: 'Telegram: Báo cáo Đăng Đa Kênh', type: 'vince.telegram', position: [1580, 240], parameters: { resource: 'message', operation: 'sendMessage', chatId: '@ungdothevinh', message: '🚀 [Ưng Đỗ Thế Vinh] Đã đăng thành công nội dung lên TikTok, Threads, Instagram Reels & YouTube Shorts!' } },
     ],
     connections: [
       { source: 'n1', target: 'n2' },
@@ -689,7 +689,7 @@ const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
       { id: 't3', name: 'Vince Multi-Agent Supervisor (Opencode2)', type: 'vince.agentManager', position: [680, 250], parameters: { provider: 'Opencode2', model: 'crouton-alpha-free', baseUrl: 'https://opencode.ai/zen/v1', agentRole: 'supervisor', taskDescription: 'Chuyển đổi bài viết dài thành chuỗi 5 bài Threads (dưới 500 ký tự/bài) và 1 bài LinkedIn.' } },
       { id: 't4', name: 'Threads (Meta): Publish Threadstorm', type: 'vince.threads.action', position: [980, 170], parameters: { resource: 'Thread', operation: 'publishText' } },
       { id: 't5', name: 'X (Twitter) & LinkedIn: Publish Post', type: 'vince.whatsappSocial.action', position: [980, 330], parameters: { resource: 'LinkedIn', operation: 'Publish Post' } },
-      { id: 't6', name: 'Telegram: Send Message', type: 'vince.telegram', position: [1280, 250], parameters: { resource: 'message', operation: 'sendMessage', chatId: '-100123456789' } },
+      { id: 't6', name: 'Telegram: Send Message', type: 'vince.telegram', position: [1280, 250], parameters: { resource: 'message', operation: 'sendMessage', chatId: '@ungdothevinh', message: '🤖 [Ưng Đỗ Thế Vinh] Báo cáo tiếp thị tự động đã sẵn sàng!' } },
     ],
     connections: [
       { source: 't1', target: 't2' },
@@ -764,7 +764,7 @@ const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
       { id: 'p3', name: 'AI Agent Opencode2 (crouton-alpha-free)', type: 'vince.modelRouter', position: [680, 250], parameters: { provider: 'Opencode2', model: 'crouton-alpha-free', baseUrl: 'https://opencode.ai/zen/v1', prompt: 'Trích xuất mã đơn hàng từ nội dung chuyển khoản và tạo biên lai xác nhận: {{ JSON.stringify($json) }}' } },
       { id: 'p4', name: 'Google Sheets: Append or Update Row', type: 'vince.googleSheets.appendRow', position: [980, 160], parameters: { resource: 'Row', operation: 'appendOrUpdate', range: 'Payments!A:G' } },
       { id: 'p5', name: 'Gmail: Send Email Receipt', type: 'vince.gmail.sendEmail', position: [980, 340], parameters: { resource: 'Message', operation: 'send' } },
-      { id: 'p6', name: 'Telegram: Báo Biến Động Số Dư', type: 'vince.telegram', position: [1280, 250], parameters: { resource: 'message', operation: 'sendMessage', chatId: '-100123456789' } },
+      { id: 'p6', name: 'Telegram: Báo Biến Động Số Dư', type: 'vince.telegram', position: [1280, 250], parameters: { resource: 'message', operation: 'sendMessage', chatId: '@ungdothevinh', message: '💰 [Ưng Đỗ Thế Vinh] Nhận thanh toán thành công qua VietQR/MoMo!' } },
     ],
     connections: [
       { source: 'p1', target: 'p2' },
