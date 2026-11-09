@@ -140,7 +140,11 @@ export function App() {
     initProjects();
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
+    const defaultWsUrl = `${protocol}//${window.location.host}/ws`;
+    const apiBase = (import.meta as any).env?.VITE_API_BASE_URL || '';
+    const wsUrl =
+      (import.meta as any).env?.VITE_WS_URL ||
+      (apiBase ? apiBase.replace(/^http/, 'ws') + '/ws' : defaultWsUrl);
     const ws = new WebSocket(wsUrl);
 
     // Keyboard shortcut N to open nodes panel (Image 1)
