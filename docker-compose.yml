@@ -1,0 +1,25 @@
+services:
+  vinceauto:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vinceauto-platform
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - PORT=5678
+      - NODE_ENV=production
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - VINCEZONE_API_KEY=${VINCEZONE_API_KEY}
+    volumes:
+      - vinceauto-data:/app/data
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  vinceauto-data:

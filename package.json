@@ -1,0 +1,16 @@
+{
+  "name": "vince-auto",
+  "version": "1.0.0",
+  "description": "VinceAuto - Intelligent Workflow Automation & AI Agent Orchestration Platform",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter vinceauto-backend dev\" \"pnpm --filter vinceauto-frontend dev\"",
+    "build": "pnpm --filter vinceauto-backend build && pnpm --filter vinceauto-frontend build",
+    "start": "node backend/dist/index.js",
+    "dev:backend": "pnpm --filter vinceauto-backend dev",
+    "dev:frontend": "pnpm --filter vinceauto-frontend dev"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
