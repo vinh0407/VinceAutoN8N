@@ -30,7 +30,12 @@ export class WorkflowStore {
   private executionHistory: IExecutionSummary[] = [];
 
   constructor(dataDir?: string) {
-    this.dataDir = dataDir || process.env.DATA_DIR || path.resolve(process.cwd(), 'data');
+    const cwd = process.cwd().replace(/\\/g, '/');
+    const rootDataDir = cwd.endsWith('/backend')
+      ? path.resolve(process.cwd(), '../data')
+      : path.resolve(process.cwd(), 'data');
+    this.dataDir = dataDir || process.env.DATA_DIR || rootDataDir;
+
     if (!fs.existsSync(this.dataDir)) {
       fs.mkdirSync(this.dataDir, { recursive: true });
     }
@@ -47,46 +52,48 @@ export class WorkflowStore {
   }
 
   private load() {
-    // 1. Projects
+    // 1. Projects - Clean start (No sample projects auto-injected)
     if (fs.existsSync(this.projectsFile)) {
       try {
         const raw = fs.readFileSync(this.projectsFile, 'utf-8');
         const list: IProject[] = JSON.parse(raw);
         for (const p of list) this.projects.set(p.id, p);
       } catch {
-        this.initDefaultProjects();
+        this.projects.clear();
       }
     } else {
-      this.initDefaultProjects();
+      this.projects.clear();
+      this.saveProjects();
     }
 
-    // 2. Workflows
+    // 2. Workflows - Clean start (No sample workflows auto-injected)
     if (fs.existsSync(this.workflowsFile)) {
       try {
         const raw = fs.readFileSync(this.workflowsFile, 'utf-8');
         const list: IWorkflow[] = JSON.parse(raw);
         for (const w of list) {
-          if (!w.projectId) w.projectId = 'proj_cskh';
           this.workflows.set(w.id, w);
         }
       } catch {
-        this.initDefaultWorkflows();
+        this.workflows.clear();
       }
     } else {
-      this.initDefaultWorkflows();
+      this.workflows.clear();
+      this.saveWorkflows();
     }
 
-    // 3. Tasks (Scheduled Tasks & Recurring Daily Tasks)
+    // 3. Tasks - Clean start
     if (fs.existsSync(this.tasksFile)) {
       try {
         const raw = fs.readFileSync(this.tasksFile, 'utf-8');
         const list: ITaskSchedule[] = JSON.parse(raw);
         for (const t of list) this.tasks.set(t.id, t);
       } catch {
-        this.initDefaultTasks();
+        this.tasks.clear();
       }
     } else {
-      this.initDefaultTasks();
+      this.tasks.clear();
+      this.saveTasks();
     }
 
     // 4. Versions
@@ -240,15 +247,16 @@ export class WorkflowStore {
   }
 
   deleteSampleProjects(): { deletedCount: number } {
-    const sampleIds = ['proj_ai', 'proj_cskh', 'proj_ecommerce'];
-    let count = 0;
-    for (const pid of sampleIds) {
-      if (this.projects.has(pid)) {
-        this.deleteProject(pid);
-        count++;
-      }
-    }
+    const count = this.projects.size;
+    this.projects.clear();
+    this.workflows.clear();
+    this.saveProjects();
+    this.saveWorkflows();
     return { deletedCount: count };
+  }
+
+  clearAllProjectsAndWorkflows(): { deletedCount: number } {
+    return this.deleteSampleProjects();
   }
 
   getWorkflowsByProject(projectId: string): IWorkflow[] {

@@ -129,8 +129,16 @@ export function App() {
           if (firstWf) {
             loadWorkflow(firstWf);
           } else {
-            handleNewWorkflowInProject(firstProj.id);
+            setCurrentWorkflow(null);
+            setNodes([]);
+            setEdges([]);
           }
+        } else {
+          setProjects([]);
+          setSelectedProjectId(null);
+          setCurrentWorkflow(null);
+          setNodes([]);
+          setEdges([]);
         }
       } catch (err) {
         console.error('Failed to load projects', err);
