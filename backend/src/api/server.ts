@@ -9,6 +9,7 @@ import { globalWorkflowStore } from '../storage/store.js';
 import { WorkflowRunner } from '../engine/runner.js';
 import { AIWorkflowBuilder } from '../ai/workflow-builder.js';
 import { SelfHealingEngine } from '../ai/self-healing.js';
+import { globalAIRouter } from '../ai/router.js';
 import { globalCronScheduler } from '../scheduler/cron-manager.js';
 
 export function createServer() {
@@ -364,6 +365,37 @@ export function createServer() {
       res.json({ success: true, plan });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  // 5.1. Test AI Agent Connection (Node-specific API & Model testing)
+  app.post('/api/ai/test-connection', async (req, res) => {
+    const { provider, baseUrl, apiKey, model } = req.body;
+    try {
+      const response = await globalAIRouter.routeAndExecute(
+        [{ role: 'user', content: 'Trả lời đúng 1 từ "OK" để xác nhận kết nối API hoạt động tốt.' }],
+        'auto',
+        provider,
+        {
+          baseUrl,
+          apiKey,
+          model,
+          temperature: 0.1,
+        }
+      );
+      res.json({
+        success: true,
+        message: 'Kết nối AI Agent thành công!',
+        reply: response.text,
+        model: response.model,
+        provider: response.provider,
+        durationMs: response.durationMs,
+      });
+    } catch (err: any) {
+      res.status(500).json({
+        success: false,
+        error: err.response?.data?.error?.message || err.message || 'Lỗi kết nối API AI',
+      });
     }
   });
 

@@ -134,7 +134,15 @@ export class VinceModelRouterNode implements INodeType {
         : (node.parameters.model || 'crouton-alpha-free');
       const apiKey = node.parameters.apiKey || context.credentials?.OPENCODE2_API_KEY || process.env.OPENCODE2_API_KEY;
 
-      const response = await globalAIRouter.routeAndExecute(messages, strategy, undefined, {
+      let explicitProvider: string | undefined = node.parameters.provider;
+      if (!explicitProvider) {
+        if (selectedModel.startsWith('gemini')) explicitProvider = 'gemini';
+        else if (selectedModel.startsWith('claude')) explicitProvider = 'claude';
+        else if (selectedModel.startsWith('llama') && !baseUrl.includes('groq')) explicitProvider = 'ollama';
+        else explicitProvider = 'openai';
+      }
+
+      const response = await globalAIRouter.routeAndExecute(messages, strategy, explicitProvider, {
         temperature: Number(node.parameters.temperature ?? 0.7),
         baseUrl,
         model: selectedModel,

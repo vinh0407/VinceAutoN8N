@@ -22,6 +22,13 @@ import {
   Code2,
   Table as TableIcon,
   Braces,
+  Eye,
+  EyeOff,
+  Sparkles,
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
+  Play,
 } from 'lucide-react';
 import axios from 'axios';
 import { INodeDescription } from '../../types';
@@ -116,6 +123,110 @@ function resolveAppCatalogForNode(node: any): IAppCatalogItem | null {
   return null;
 }
 
+export const AI_PROVIDERS_PRESETS = [
+  {
+    id: 'opencode2',
+    name: 'Opencode2 (Free)',
+    badge: 'Miễn phí',
+    baseUrl: 'https://opencode.ai/zen/v1',
+    defaultModel: 'crouton-alpha-free',
+    models: [
+      { name: 'crouton-alpha-free (Opencode2 Free)', value: 'crouton-alpha-free' },
+    ],
+    placeholderKey: 'oc_sk_... (hoặc để trống)',
+  },
+  {
+    id: 'openai',
+    name: 'OpenAI (GPT-4o)',
+    badge: 'Phổ biến',
+    baseUrl: 'https://api.openai.com/v1',
+    defaultModel: 'gpt-4o-mini',
+    models: [
+      { name: 'gpt-4o (Omni Flagship)', value: 'gpt-4o' },
+      { name: 'gpt-4o-mini (Nhanh & Tiết kiệm)', value: 'gpt-4o-mini' },
+      { name: 'o3-mini (Tư duy & Logic)', value: 'o3-mini' },
+      { name: 'gpt-4-turbo', value: 'gpt-4-turbo' },
+    ],
+    placeholderKey: 'sk-proj-...',
+  },
+  {
+    id: 'gemini',
+    name: 'Google Gemini',
+    badge: 'Multimodal',
+    baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+    defaultModel: 'gemini-2.0-flash',
+    models: [
+      { name: 'gemini-2.0-flash (Siêu tốc)', value: 'gemini-2.0-flash' },
+      { name: 'gemini-1.5-pro (Tư duy sâu)', value: 'gemini-1.5-pro' },
+      { name: 'gemini-1.5-flash', value: 'gemini-1.5-flash' },
+    ],
+    placeholderKey: 'AIzaSy...',
+  },
+  {
+    id: 'claude',
+    name: 'Anthropic Claude',
+    badge: 'Reasoning',
+    baseUrl: 'https://api.anthropic.com/v1',
+    defaultModel: 'claude-3-5-sonnet',
+    models: [
+      { name: 'claude-3-5-sonnet (Claude Sonnet)', value: 'claude-3-5-sonnet' },
+      { name: 'claude-3-5-haiku (Claude Haiku)', value: 'claude-3-5-haiku' },
+      { name: 'claude-3-opus', value: 'claude-3-opus' },
+    ],
+    placeholderKey: 'sk-ant-api03-...',
+  },
+  {
+    id: 'deepseek',
+    name: 'DeepSeek',
+    badge: 'R1 / V3',
+    baseUrl: 'https://api.deepseek.com/v1',
+    defaultModel: 'deepseek-chat',
+    models: [
+      { name: 'deepseek-chat (DeepSeek V3)', value: 'deepseek-chat' },
+      { name: 'deepseek-reasoner (DeepSeek R1)', value: 'deepseek-reasoner' },
+    ],
+    placeholderKey: 'sk-...',
+  },
+  {
+    id: 'groq',
+    name: 'Groq (LPU)',
+    badge: 'Siêu tốc',
+    baseUrl: 'https://api.groq.com/openai/v1',
+    defaultModel: 'llama-3.3-70b-versatile',
+    models: [
+      { name: 'llama-3.3-70b-versatile (Llama 3.3 70B)', value: 'llama-3.3-70b-versatile' },
+      { name: 'llama-3.1-8b-instant', value: 'llama-3.1-8b-instant' },
+      { name: 'mixtral-8x7b-32768', value: 'mixtral-8x7b-32768' },
+    ],
+    placeholderKey: 'gsk_...',
+  },
+  {
+    id: 'ollama',
+    name: 'Ollama Local',
+    badge: 'Offline',
+    baseUrl: 'http://localhost:11434/v1',
+    defaultModel: 'llama3:latest',
+    models: [
+      { name: 'llama3:latest', value: 'llama3:latest' },
+      { name: 'qwen2.5:latest', value: 'qwen2.5:latest' },
+      { name: 'mistral:latest', value: 'mistral:latest' },
+      { name: 'deepseek-r1:latest', value: 'deepseek-r1:latest' },
+    ],
+    placeholderKey: 'Không cần API Key (Local)',
+  },
+  {
+    id: 'custom',
+    name: 'Custom Endpoint',
+    badge: 'Tùy chỉnh',
+    baseUrl: 'https://api.your-endpoint.com/v1',
+    defaultModel: 'custom',
+    models: [
+      { name: 'Tự nhập Model tùy chỉnh', value: 'custom' },
+    ],
+    placeholderKey: 'Nhập API Key của endpoint...',
+  },
+];
+
 export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
   node,
   nodeDescription,
@@ -174,6 +285,19 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
   // Mock data editor
   const [isEditingMockData, setIsEditingMockData] = useState(false);
   const [mockDataText, setMockDataText] = useState('');
+
+  // AI Agent specific node states (independent from system API)
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [isCustomModelMode, setIsCustomModelMode] = useState<boolean>(
+    Boolean(parameters.customModel || parameters.model === 'custom')
+  );
+  const [isTestingAi, setIsTestingAi] = useState(false);
+  const [testAiResult, setTestAiResult] = useState<{
+    success: boolean;
+    message: string;
+    durationMs?: number;
+    reply?: string;
+  } | null>(null);
 
   // Bottom trigger info drawer
   const [showTriggerHelp, setShowTriggerHelp] = useState(false);
@@ -418,6 +542,62 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
     }
   };
 
+  const handleSelectAiProvider = (providerId: string) => {
+    const preset = AI_PROVIDERS_PRESETS.find((p) => p.id === providerId);
+    if (!preset) return;
+    const nextParams: Record<string, any> = {
+      ...parameters,
+      provider: preset.id,
+      baseUrl: preset.baseUrl,
+      model: preset.defaultModel,
+    };
+    if (preset.id === 'custom') {
+      setIsCustomModelMode(true);
+    } else {
+      setIsCustomModelMode(false);
+    }
+    onUpdateParameters(node.id, nextParams);
+  };
+
+  const handleTestAiConnection = async () => {
+    setIsTestingAi(true);
+    setTestAiResult(null);
+    try {
+      const activeModel =
+        isCustomModelMode || parameters.model === 'custom'
+          ? parameters.customModel || 'crouton-alpha-free'
+          : parameters.model || 'crouton-alpha-free';
+
+      const res = await axios.post('/api/ai/test-connection', {
+        provider: parameters.provider || 'openai',
+        baseUrl: parameters.baseUrl || 'https://opencode.ai/zen/v1',
+        apiKey: parameters.apiKey || '',
+        model: activeModel,
+      });
+
+      if (res.data?.success) {
+        setTestAiResult({
+          success: true,
+          message: `Kết nối thành công! (${res.data.durationMs}ms)`,
+          durationMs: res.data.durationMs,
+          reply: res.data.reply,
+        });
+      } else {
+        setTestAiResult({
+          success: false,
+          message: res.data?.error || 'Lỗi kiểm tra kết nối API',
+        });
+      }
+    } catch (err: any) {
+      setTestAiResult({
+        success: false,
+        message: err.response?.data?.error || err.message || 'Không thể kết nối API',
+      });
+    } finally {
+      setIsTestingAi(false);
+    }
+  };
+
   // Sample upstream input data for action nodes so user can always drag & drop fields
   const effectiveInputItems =
     inputData.length > 0
@@ -562,6 +742,12 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
     : isAiAgent
     ? defaultAiAgentProperties
     : [];
+
+  const propertiesToRender = isAiAgent && !isTelegram
+    ? properties.filter(
+        (p) => !['baseUrl', 'model', 'customModel', 'apiKey', 'provider'].includes(p.name)
+      )
+    : properties;
   const webhookUrl = `https://vinceauto.local/webhook-test/${node.id.replace(/[^a-zA-Z0-9-]/g, '')}`;
 
   return (
@@ -1111,29 +1297,260 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                     </div>
                   )}
 
-                  {/* Hướng dẫn cấu hình API của AI Agent: Base URL & Lựa chọn Model */}
+                  {/* DEDICATED AI AGENT CONFIGURATION PANEL (Independent Node Settings) */}
                   {isAiAgent && !isTelegram && (
-                    <div className="p-3.5 rounded-lg bg-[#14232c] border border-[#1e4868] text-xs space-y-2">
-                      <div className="font-semibold text-sky-400 flex items-center space-x-1.5">
-                        <Bot className="w-3.5 h-3.5 text-sky-400" />
-                        <span>Cấu hình API của AI Agent:</span>
+                    <div className="p-4 rounded-xl bg-[#141b24] border border-[#1f3a52] text-xs space-y-4 shadow-xl">
+                      {/* Title & Badge */}
+                      <div className="flex items-center justify-between border-b border-[#22394e] pb-2.5">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-6 h-6 rounded-md bg-[#0068FF]/20 border border-[#0068FF]/50 flex items-center justify-center text-sky-400">
+                            <Bot className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-zinc-100 flex items-center space-x-2">
+                              <span>Cấu hình AI Agent riêng cho nút này</span>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1e3a5f] text-sky-300 font-normal">
+                                Độc lập với hệ thống
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-zinc-400">
+                              Chọn AI Agent, nhập Base URL, API Key và Model riêng cho bước xử lý này.
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-zinc-300 text-[11.5px] leading-relaxed space-y-1">
-                        <div>
-                          1. <strong>Đường link Base URL:</strong> Nhập link endpoint API (VD: <code className="bg-black/50 px-1 py-0.5 rounded text-sky-200 font-mono">https://opencode.ai/zen/v1</code> hoặc <code className="bg-black/50 px-1 py-0.5 rounded text-sky-200 font-mono">https://api.openai.com/v1</code>).
+
+                      {/* 1. Provider Selector */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-zinc-200 block">
+                          1. Chọn AI Agent / Nhà cung cấp (Provider):
+                        </label>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                          {AI_PROVIDERS_PRESETS.map((prov) => {
+                            const isSelected =
+                              (parameters.provider || 'opencode2') === prov.id ||
+                              (!parameters.provider && prov.id === 'opencode2');
+                            return (
+                              <button
+                                key={prov.id}
+                                type="button"
+                                onClick={() => handleSelectAiProvider(prov.id)}
+                                className={`px-2.5 py-2 rounded-lg border text-left transition-all flex flex-col justify-between ${
+                                  isSelected
+                                    ? 'bg-[#1b354f] border-sky-400 text-white ring-1 ring-sky-400/30'
+                                    : 'bg-[#12161c] border-[#252c38] text-zinc-400 hover:text-zinc-200 hover:border-zinc-600'
+                                }`}
+                              >
+                                <div className="text-[11px] font-semibold truncate flex items-center justify-between">
+                                  <span>{prov.name}</span>
+                                  {isSelected && <Check className="w-3 h-3 text-sky-400 shrink-0 ml-1" />}
+                                </div>
+                                <span className="text-[9px] text-zinc-400 font-mono mt-0.5">{prov.badge}</span>
+                              </button>
+                            );
+                          })}
                         </div>
-                        <div>
-                          2. <strong>Mục lựa chọn Model:</strong> Chọn model trong danh sách (crouton-alpha-free, gpt-4o, gemini-2.0-flash, claude, deepseek-chat...) hoặc chọn Custom Model để tự nhập.
+                      </div>
+
+                      {/* 2. Base URL Input */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-medium text-zinc-200 block">
+                            2. Đường link Base URL (Endpoint API):
+                          </label>
+                          <span className="text-[10px] text-zinc-400">OpenAI-compatible URL</span>
                         </div>
-                        <div>
-                          3. <strong>Prompt & Kéo thả:</strong> Kéo thả trường dữ liệu từ cột <strong>INPUT</strong> bên trái vào ô <strong>Prompt</strong> bên dưới để truyền biến tự động.
+                        <input
+                          type="text"
+                          value={parameters.baseUrl || 'https://opencode.ai/zen/v1'}
+                          onChange={(e) => handleFieldChange('baseUrl', e.target.value)}
+                          placeholder="https://opencode.ai/zen/v1 hoặc https://api.openai.com/v1"
+                          className="w-full bg-[#0e1217] border border-[#263242] rounded-md px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 font-mono focus:outline-none focus:border-sky-400"
+                        />
+                        {/* Quick preset URL pills */}
+                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[10px]">
+                          <span className="text-zinc-400">Gợi ý nhanh:</span>
+                          {[
+                            { label: 'OpenCode2 (Free)', url: 'https://opencode.ai/zen/v1' },
+                            { label: 'OpenAI', url: 'https://api.openai.com/v1' },
+                            { label: 'DeepSeek', url: 'https://api.deepseek.com/v1' },
+                            { label: 'Groq', url: 'https://api.groq.com/openai/v1' },
+                            { label: 'Ollama', url: 'http://localhost:11434/v1' },
+                          ].map((p) => (
+                            <button
+                              key={p.label}
+                              type="button"
+                              onClick={() => handleFieldChange('baseUrl', p.url)}
+                              className="px-2 py-0.5 rounded bg-[#18202b] hover:bg-[#223042] border border-[#263445] text-sky-300 font-mono transition-colors"
+                            >
+                              {p.label}
+                            </button>
+                          ))}
                         </div>
+                      </div>
+
+                      {/* 3. API Key Input with Show/Hide toggle */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-medium text-zinc-200 flex items-center space-x-1.5">
+                            <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                            <span>3. Nhập API Key riêng cho AI Agent:</span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setShowApiKey(!showApiKey)}
+                            className="text-[11px] text-zinc-400 hover:text-white flex items-center space-x-1"
+                          >
+                            {showApiKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                            <span>{showApiKey ? 'Ẩn Key' : 'Hiện Key'}</span>
+                          </button>
+                        </div>
+                        <div className="relative">
+                          <input
+                            type={showApiKey ? 'text' : 'password'}
+                            value={parameters.apiKey || ''}
+                            onChange={(e) => handleFieldChange('apiKey', e.target.value)}
+                            placeholder={
+                              AI_PROVIDERS_PRESETS.find((p) => p.id === (parameters.provider || 'opencode2'))
+                                ?.placeholderKey || 'sk-... hoặc oc_sk_...'
+                            }
+                            className="w-full bg-[#0e1217] border border-[#263242] rounded-md px-3 py-2 pr-10 text-xs text-zinc-100 placeholder-zinc-500 font-mono focus:outline-none focus:border-sky-400"
+                          />
+                        </div>
+                        <div className="text-[11px] text-zinc-400">
+                          API Key này chỉ áp dụng riêng cho nút này, không ghi đè hay làm thay đổi API hệ thống chung.
+                        </div>
+                      </div>
+
+                      {/* 4. Model Selection & Custom Model Input */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-medium text-zinc-200 block">
+                            4. Lựa chọn Model & Tên Model:
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = !isCustomModelMode;
+                              setIsCustomModelMode(next);
+                              if (next) {
+                                handleFieldChange('model', 'custom');
+                              } else {
+                                handleFieldChange('model', 'crouton-alpha-free');
+                              }
+                            }}
+                            className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors border ${
+                              isCustomModelMode
+                                ? 'bg-sky-500 text-zinc-900 border-sky-400'
+                                : 'bg-[#18202b] hover:bg-[#223042] text-sky-300 border-[#2b3a4d]'
+                            }`}
+                          >
+                            {isCustomModelMode ? '✓ Đang tự nhập Model' : '+ Nút tự nhập Model'}
+                          </button>
+                        </div>
+
+                        {!isCustomModelMode ? (
+                          <select
+                            value={parameters.model || 'crouton-alpha-free'}
+                            onChange={(e) => {
+                              if (e.target.value === 'custom') {
+                                setIsCustomModelMode(true);
+                                handleFieldChange('model', 'custom');
+                              } else {
+                                handleFieldChange('model', e.target.value);
+                              }
+                            }}
+                            className="w-full bg-[#0e1217] border border-[#263242] rounded-md px-3 py-2 text-xs text-zinc-100 font-mono focus:outline-none focus:border-sky-400"
+                          >
+                            <optgroup label="Model đề xuất của Nhà cung cấp hiện tại">
+                              {(
+                                AI_PROVIDERS_PRESETS.find((p) => p.id === (parameters.provider || 'opencode2'))
+                                  ?.models || []
+                              ).map((m) => (
+                                <option key={m.value} value={m.value}>
+                                  {m.name}
+                                </option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Tất cả các Model phổ biến khác">
+                              <option value="crouton-alpha-free">crouton-alpha-free (Opencode2 Free)</option>
+                              <option value="gpt-4o">gpt-4o (OpenAI Omni Flagship)</option>
+                              <option value="gpt-4o-mini">gpt-4o-mini (Fast & Efficient)</option>
+                              <option value="o3-mini">o3-mini (OpenAI Reasoning)</option>
+                              <option value="gemini-2.0-flash">gemini-2.0-flash (Google Flash)</option>
+                              <option value="gemini-1.5-pro">gemini-1.5-pro (Google Pro)</option>
+                              <option value="claude-3-5-sonnet">claude-3-5-sonnet (Claude Sonnet)</option>
+                              <option value="deepseek-chat">deepseek-chat (DeepSeek V3)</option>
+                              <option value="deepseek-reasoner">deepseek-reasoner (DeepSeek R1)</option>
+                              <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile (Groq)</option>
+                              <option value="llama3:latest">llama3:latest (Local Ollama)</option>
+                            </optgroup>
+                            <option value="custom">-- Tự nhập Model khác (Custom Model) --</option>
+                          </select>
+                        ) : (
+                          <div className="space-y-1">
+                            <input
+                              type="text"
+                              value={parameters.customModel || ''}
+                              onChange={(e) => {
+                                handleFieldChange('customModel', e.target.value);
+                                handleFieldChange('model', 'custom');
+                              }}
+                              placeholder="Nhập tên model (VD: gpt-4o-mini, qwen2.5-coder:32b, deepseek-r1:14b, mistral-large)..."
+                              className="w-full bg-[#0e1217] border border-sky-400/80 rounded-md px-3 py-2 text-xs text-white placeholder-zinc-500 font-mono focus:outline-none focus:ring-1 focus:ring-sky-400"
+                            />
+                            <div className="text-[10px] text-zinc-400 flex items-center justify-between">
+                              <span>Hệ thống sẽ gửi trực tiếp tên model này tới Base URL endpoint.</span>
+                              <button
+                                type="button"
+                                onClick={() => setIsCustomModelMode(false)}
+                                className="text-sky-400 hover:underline"
+                              >
+                                Quay lại danh sách chọn
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 5. Test Connection Button & Result */}
+                      <div className="pt-2 border-t border-[#22394e] flex flex-wrap items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={handleTestAiConnection}
+                          disabled={isTestingAi}
+                          className="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-zinc-900 font-semibold text-xs flex items-center space-x-1.5 transition-all shadow cursor-pointer disabled:opacity-50"
+                        >
+                          {isTestingAi ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Zap className="w-3.5 h-3.5 fill-current" />
+                          )}
+                          <span>{isTestingAi ? 'Đang kiểm tra API...' : 'Kiểm tra kết nối API'}</span>
+                        </button>
+
+                        {testAiResult && (
+                          <div
+                            className={`px-3 py-1 rounded-md text-xs flex items-center space-x-1.5 ${
+                              testAiResult.success
+                                ? 'bg-emerald-950/80 border border-emerald-500/50 text-emerald-300'
+                                : 'bg-rose-950/80 border border-rose-500/50 text-rose-300'
+                            }`}
+                          >
+                            {testAiResult.success ? (
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            ) : (
+                              <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                            )}
+                            <span className="truncate max-w-[280px]">{testAiResult.message}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
 
                   {/* 6. Node-Specific Properties (Drop-enabled for Kéo Thả!) */}
-                  {properties.map((prop) => {
+                  {propertiesToRender.map((prop) => {
                     const val =
                       parameters[prop.name] !== undefined
                         ? parameters[prop.name]
