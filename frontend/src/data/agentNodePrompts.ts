@@ -506,8 +506,8 @@ export const PREBUILT_AGENT_WORKFLOW_PROMPTS: IPrebuiltWorkflowPrompt[] = [
   },
   {
     id: 'wf_prompt_chatbot_telegram',
-    title: '0A. Chatbot AI Telegram (Ai nhắn tin tới Bot cũng tự động trả lời)',
-    category: 'Chatbot AI • Telegram',
+    title: '0A. Chatbot AI Telegram của Ưng Đỗ Thế Vinh (Ai nhắn tin tới Bot cũng tự động trả lời)',
+    category: 'Chatbot AI • Telegram (@ungdothevinh)',
     nodesCount: 4,
     nodeNames: [
       'Telegram Trigger (Message)',
@@ -516,12 +516,12 @@ export const PREBUILT_AGENT_WORKFLOW_PROMPTS: IPrebuiltWorkflowPrompt[] = [
       'Telegram: Send Message (Reply người gửi)',
     ],
     prompt:
-      '/build Tạo chatbot AI 2 chiều cho Telegram: nhận tin nhắn từ bất kỳ người dùng nào qua Telegram Trigger, chuẩn hóa câu hỏi và chatId bằng Edit Fields, gọi API AI Agent để trả lời và tự động reply lại đúng người gửi trên Telegram',
+      '/build Tạo chatbot AI 2 chiều cho dự án của Ưng Đỗ Thế Vinh (@ungdothevinh) trên Telegram: nhận tin nhắn từ bất kỳ người dùng nào qua Telegram Trigger, chuẩn hóa câu hỏi và chatId bằng Edit Fields, gọi API AI Agent để trả lời và tự động reply lại đúng người gửi trên Telegram',
   },
   {
     id: 'wf_prompt_chatbot_zalo',
-    title: '0B. Chatbot AI Zalo OA (Tự động tư vấn & phản hồi tin nhắn khách hàng)',
-    category: 'Chatbot AI • Zalo OA',
+    title: '0B. Chatbot AI Zalo OA của Ưng Đỗ Thế Vinh (Tự động tư vấn & phản hồi khách hàng)',
+    category: 'Chatbot AI • Zalo OA (Vinh)',
     nodesCount: 4,
     nodeNames: [
       'Chat / Zalo Trigger (Tin nhắn mới)',
@@ -530,11 +530,11 @@ export const PREBUILT_AGENT_WORKFLOW_PROMPTS: IPrebuiltWorkflowPrompt[] = [
       'Zalo OA: Send Message / ZNS',
     ],
     prompt:
-      '/build Tạo chatbot AI 2 chiều cho Zalo OA: lắng nghe tin nhắn khách hàng, chuẩn hóa dữ liệu bằng Edit Fields, gọi API AI Agent tư vấn tự động và phản hồi lại khách hàng qua Zalo OA',
+      '/build Tạo chatbot AI 2 chiều cho dự án của Ưng Đỗ Thế Vinh trên Zalo OA: lắng nghe tin nhắn khách hàng, chuẩn hóa dữ liệu bằng Edit Fields, gọi API AI Agent tư vấn tự động và phản hồi lại khách hàng qua Zalo OA',
   },
   {
     id: 'wf_prompt_chatbot_social',
-    title: '0C. Chatbot AI Mạng xã hội (Messenger / Instagram / Threads / TikTok)',
+    title: '0C. Chatbot AI Mạng xã hội của Ưng Đỗ Thế Vinh (Messenger / Instagram / Threads / TikTok)',
     category: 'Chatbot AI • Messenger / Threads / TikTok / IG',
     nodesCount: 5,
     nodeNames: [
@@ -544,7 +544,7 @@ export const PREBUILT_AGENT_WORKFLOW_PROMPTS: IPrebuiltWorkflowPrompt[] = [
       'Messenger / Instagram / Threads / TikTok: Reply',
     ],
     prompt:
-      '/build Tạo chatbot AI tự động trả lời bình luận và tin nhắn DM trên Messenger, Instagram, Threads và TikTok: nhận sự kiện từ Social Media Trigger, lọc spam bằng Filter, gọi AI Agent soạn phản hồi và tự động reply trên nền tảng tương ứng',
+      '/build Tạo chatbot AI cho dự án của Ưng Đỗ Thế Vinh tự động trả lời bình luận và tin nhắn DM trên Messenger, Instagram, Threads và TikTok: nhận sự kiện từ Social Media Trigger, lọc spam bằng Filter, gọi AI Agent soạn phản hồi và tự động reply trên nền tảng tương ứng',
   },
   {
     id: 'wf_prompt_ecom_shopee',
