@@ -41,7 +41,13 @@ function resolveBotToken(wf: IWorkflow, trigger: INode): string {
   const fromTrigger = trigger.parameters?.botToken;
   if (fromTrigger && typeof fromTrigger === 'string' && !fromTrigger.includes('{{')) return fromTrigger.trim();
   const tgNode = wf.nodes.find(
-    (n) => n.type?.toLowerCase().includes('telegram') && typeof n.parameters?.botToken === 'string' && n.parameters.botToken.trim() && !n.parameters.botToken.includes('{{')
+    (n) =>
+      (n.type?.toLowerCase().includes('telegram') ||
+        n.name?.toLowerCase().includes('telegram') ||
+        String(n.parameters?.app || '').toLowerCase().includes('telegram')) &&
+      typeof n.parameters?.botToken === 'string' &&
+      n.parameters.botToken.trim() &&
+      !n.parameters.botToken.includes('{{')
   );
   if (tgNode) return String(tgNode.parameters.botToken).trim();
   const creds = globalWorkflowStore.getCredentials() || {};
@@ -91,8 +97,24 @@ export class TelegramPollingManager {
       }
     }
 
-    // Start / update pollers
+    // Start / update pollers or webhook (webhook on Render HTTPS wakes server even when browser is closed & Render sleeps)
+    const publicHttpsUrl = (process.env.RENDER_EXTERNAL_URL || process.env.PUBLIC_URL || '').trim().replace(/\/+$/, '');
+    const useWebhook = publicHttpsUrl.startsWith('https://');
+
     for (const [token, workflowIds] of wanted) {
+      if (useWebhook) {
+        // Register Telegram webhook so Telegram itself wakes Render up 24/7
+        const webhookUrl = `${publicHttpsUrl}/webhook/telegram`;
+        axios
+          .post(`https://api.telegram.org/bot${token}/setWebhook`, {
+            url: webhookUrl,
+            allowed_updates: ['message', 'edited_message', 'channel_post', 'callback_query'],
+          })
+          .then(() => this.record(`[TelegramWebhook] Registered ${webhookUrl} for bot ${token.split(':')[0]} (${workflowIds.length} workflow)`))
+          .catch((err) => this.record(`[TelegramWebhook] setWebhook error: ${err.response?.data?.description || err.message}`));
+        continue;
+      }
+
       const existing = this.pollers.get(token);
       if (existing) {
         existing.workflowIds = workflowIds;
@@ -102,6 +124,18 @@ export class TelegramPollingManager {
       this.pollers.set(token, state);
       this.loop(state).catch((err) => console.error('[TelegramPoller] loop crashed:', err?.message));
     }
+  }
+
+  /** Handle an incoming Telegram Webhook update (used on Render HTTPS when browser is closed). */
+  async handleWebhookUpdate(update: any) {
+    const activeTelegramWfs = globalWorkflowStore
+      .getWorkflows()
+      .filter((wf) => wf.active && wf.nodes.some((n) => isTelegramTrigger(n, wf)));
+    if (activeTelegramWfs.length === 0) return;
+    await this.dispatch(
+      { token: 'webhook', workflowIds: activeTelegramWfs.map((w) => w.id), offset: 0, running: true },
+      update
+    );
   }
 
   getStatus() {

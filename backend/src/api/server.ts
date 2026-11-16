@@ -147,7 +147,23 @@ export function createServer() {
   });
 
   app.get('/api/telegram/status', (req, res) => {
-    res.json({ success: true, listeners: globalTelegramPoller.getStatus() });
+    const publicUrl = (process.env.RENDER_EXTERNAL_URL || process.env.PUBLIC_URL || '').trim();
+    res.json({
+      success: true,
+      mode: publicUrl.startsWith('https://') ? 'webhook_24_7' : 'long_polling',
+      webhookUrl: publicUrl.startsWith('https://') ? `${publicUrl.replace(/\/+$/, '')}/webhook/telegram` : null,
+      listeners: globalTelegramPoller.getStatus(),
+    });
+  });
+
+  // Dedicated Telegram Webhook receiver (wakes Render Free even when browser is closed!)
+  app.post('/webhook/telegram', async (req, res) => {
+    res.status(200).json({ ok: true });
+    if (req.body && typeof req.body === 'object') {
+      globalTelegramPoller.handleWebhookUpdate(req.body).catch((err) => {
+        console.error('[TelegramWebhook] dispatch error:', err.message);
+      });
+    }
   });
 
   // Cloud / GitHub Backup endpoints (lets user link GitHub right in the UI)
