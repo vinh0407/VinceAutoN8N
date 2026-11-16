@@ -193,7 +193,7 @@ Nhiệm vụ của bạn là phân tích yêu cầu của người dùng và thi
 ${MASTER_NODE_PROMPT_DICTIONARY}
 
 QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
-1. Luôn bắt đầu bằng ĐÚNG 1 nút Trigger phù hợp nhất ("trigger.appEvent" cho Telegram/Zalo/App, "trigger.chat" cho Chatbot tổng quát, "trigger.cron" cho lịch định kỳ, "trigger.webhook", "trigger.ecommerce", "trigger.payment", "trigger.form", "trigger.database", hoặc "trigger.manual").
+1. Luôn bắt đầu bằng ĐÚNG 1 nút Trigger phù hợp nhất theo sự kiện thực tế ("trigger.appEvent" cho Telegram/Google Sheets/Google Drive/Notion/Gmail, "trigger.chat" cho Chatbot, "trigger.webhook", "trigger.ecommerce", "trigger.payment", "trigger.form" cho nhập link/biểu mẫu, "trigger.database", hoặc "trigger.manual"). CHỈ dùng "trigger.cron" (On a schedule) khi người dùng yêu cầu rõ ràng việc chạy định kỳ, hàng ngày hoặc theo giờ cụ thể.
 2. Sắp xếp luồng dữ liệu theo trình tự logic chuẩn: Trigger -> (Lọc Filter / Chuẩn hóa Edit Fields nếu cần) -> AI Agent / Xử lý -> Hành động đích (Telegram, Zalo, Sheets, Gmail, CRM, Database...).
 3. Nếu có nhiều hành động đích độc lập (ví dụ vừa gửi Telegram vừa gửi Zalo/Sheets), hãy nối song song (fan-out) từ nút AI Agent ra các nhánh đích thay vì nối nối tiếp gượng ép.
 4. Gọi ĐÚNG "type" và tên hiển thị chuẩn ("name") của các nút trong danh mục trên.
@@ -1006,10 +1006,48 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
         },
       };
       steps.push('Phát hiện bản ghi mới phát sinh trong cơ sở dữ liệu (trigger.database)');
-    } else {
+    } else if (p.includes('google sheet') || p.includes('trang tính') || p.includes('link bài viết')) {
+      triggerNode = {
+        id: 'node_trigger_sheets',
+        name: 'Google Sheets Trigger: Khi có Dòng/Link Mới [T/W]',
+        type: 'trigger.appEvent',
+        position: nextPos(),
+        parameters: {
+          app: 'googleSheets',
+          event: 'rowAdded',
+          range: 'Links!A:E',
+        },
+      };
+      steps.push('Tự động kích hoạt ngay khi có dòng/link mới thêm vào Google Sheets (trigger.appEvent)');
+    } else if (p.includes('google drive') || p.includes('drive')) {
+      triggerNode = {
+        id: 'node_trigger_drive',
+        name: 'Google Drive Trigger: Khi có Video/File Mới [T/W]',
+        type: 'trigger.appEvent',
+        position: nextPos(),
+        parameters: {
+          app: 'googleDrive',
+          event: 'fileCreated',
+          folderId: 'VinceAuto_Videos',
+        },
+      };
+      steps.push('Tự động kích hoạt khi có file/video mới tải lên Google Drive (trigger.appEvent)');
+    } else if (p.includes('notion')) {
+      triggerNode = {
+        id: 'node_trigger_notion',
+        name: 'Notion Trigger: Khi có Bài Viết Mới [T/W]',
+        type: 'trigger.appEvent',
+        position: nextPos(),
+        parameters: {
+          app: 'notion',
+          event: 'pageAdded',
+        },
+      };
+      steps.push('Tự động kích hoạt khi có trang/bài viết mới trên Notion (trigger.appEvent)');
+    } else if (p.includes('định kỳ') || p.includes('hàng ngày') || p.includes('mỗi ngày') || p.includes('mỗi giờ') || p.includes('schedule') || p.includes('cron') || p.includes('lịch')) {
       triggerNode = {
         id: 'node_trigger_schedule',
-        name: 'Schedule Trigger: Chạy định kỳ tự động [T/P]',
+        name: 'Schedule Trigger: Chạy định kỳ theo lịch [T/P]',
         type: 'trigger.cron',
         position: nextPos(),
         parameters: {
@@ -1017,7 +1055,16 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
           timezone: 'Asia/Ho_Chi_Minh',
         },
       };
-      steps.push('Kích hoạt tự động theo lịch trình Cron chuẩn (trigger.cron)');
+      steps.push('Kích hoạt tự động theo lịch trình Cron theo yêu cầu (trigger.cron)');
+    } else {
+      triggerNode = {
+        id: 'node_trigger_manual',
+        name: 'Manual Trigger: Kích hoạt chạy theo yêu cầu',
+        type: 'trigger.manual',
+        position: nextPos(),
+        parameters: {},
+      };
+      steps.push('Kích hoạt quy trình theo yêu cầu hoặc gọi từ Telegram / API (trigger.manual)');
     }
     nodes.push(triggerNode);
 

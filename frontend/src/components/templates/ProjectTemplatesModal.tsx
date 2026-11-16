@@ -586,15 +586,15 @@ function optimizeTemplateForVinceAuto(tpl: IN8nTemplateItem): IN8nTemplateItem {
 const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
   {
     id: 'vince_tpl_chatbot_telegram_00',
-    fileName: 'VinhUng_Telegram_Chatbot_2Way.json',
-    relativePath: 'Vinh Ưng Cá Nhân Hóa / Chatbot AI Telegram',
+    fileName: 'VinceAuto_Telegram_Chatbot_2Way.json',
+    relativePath: 'VinceAuto Featured / Chatbot AI Telegram',
     category: 'VINCEAUTO_FEATURED',
-    categoryVi: '★ Mẫu Cá Nhân Hóa — Vinh Ưng (@ungvinh0407)',
-    titleEn: '2-Way Telegram AI Chatbot (Vinh Ưng)',
-    titleVi: 'Chatbot AI Telegram 2 Chiều — Cá nhân hóa cho Vinh Ưng (@ungvinh0407)',
+    categoryVi: '★ Mẫu Tối Ưu Chuẩn Dự Án VinceAuto',
+    titleEn: '2-Way Telegram AI Chatbot',
+    titleVi: 'Chatbot AI Telegram 2 Chiều — Tự động Trả lời Mọi Người Nhắn',
     descriptionVi:
-      'Mẫu chatbot Telegram tối ưu riêng cho Vinh Ưng (@ungvinh0407): Lắng nghe tin nhắn từ Telegram Bot API, chuẩn hóa câu hỏi & Chat ID bằng Edit Fields, gọi Google Gemini (gemini-3.1-flash-lite-preview) trả lời thông minh và tự động reply đúng người nhắn.',
-    departmentVi: 'Chatbot AI & Trợ lý Cá nhân',
+      'Lắng nghe tin nhắn từ Telegram Bot API theo thời gian thực, chuẩn hóa câu hỏi & Chat ID bằng Edit Fields, gọi Google Gemini (gemini-3.1-flash-lite-preview) trả lời thông minh và tự động reply lại đúng người vừa nhắn.',
+    departmentVi: 'Chatbot AI & CSKH',
     isVinceOptimizedFeatured: true,
     nodesCount: 4,
     nodeNames: [
@@ -606,7 +606,7 @@ const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
     nodes: [
       { id: 'tg1', name: 'Telegram Trigger', type: 'trigger.appEvent', position: [80, 240], parameters: { app: 'telegram', updates: ['Message'] } },
       { id: 'tg2', name: 'Edit Fields (Set)', type: 'transform.editFields', position: [380, 240], parameters: { mode: 'manual', fields: { userQuery: '{{ $json.text || $json.message.text }}', chatId: '{{ $json.chatId || $json.message.chat.id }}' }, keepOnlySet: false } },
-      { id: 'tg3', name: 'AI Agent (Google Gemini)', type: 'vince.modelRouter', position: [680, 240], parameters: { provider: 'gemini', providerType: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', model: 'gemini-3.1-flash-lite-preview', prompt: '{{ $json.userQuery || $json.text || $json.message.text }}', systemPrompt: 'Bạn là trợ lý ảo AI cá nhân của Vinh Ưng (@ungvinh0407) trên Telegram. Hãy trả lời chính xác, nhanh gọn, lịch sự và hữu ích.' } },
+      { id: 'tg3', name: 'AI Agent (Google Gemini)', type: 'vince.modelRouter', position: [680, 240], parameters: { provider: 'gemini', providerType: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', model: 'gemini-3.1-flash-lite-preview', prompt: '{{ $json.userQuery || $json.text || $json.message.text }}', systemPrompt: 'Bạn là trợ lý ảo AI thông minh trên Telegram. Hãy trả lời chính xác, nhanh gọn, lịch sự và hữu ích.' } },
       { id: 'tg4', name: 'Telegram: Send Message', type: 'vince.telegram', position: [980, 240], parameters: { resource: 'message', operation: 'sendMessage', chatId: '{{ $json.chatId || $json.message.chat.id }}', message: '{{ $json.aiResponse || $json.text }}', parseMode: 'HTML' } },
     ],
     connections: [
@@ -617,20 +617,19 @@ const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
   },
   {
     id: 'vince_tpl_fb_video_reup_00b',
-    fileName: 'VinhUng_Facebook_Video_Downloader_Publisher.json',
-    relativePath: 'Vinh Ưng Cá Nhân Hóa / Facebook Video Reup',
+    fileName: 'VinceAuto_MultiPlatform_Video_Drive_Sheets_Facebook.json',
+    relativePath: 'VinceAuto Featured / Video Automation',
     category: 'VINCEAUTO_FEATURED',
-    categoryVi: '★ Mẫu Cá Nhân Hóa — Vinh Ưng (@ungvinh0407)',
-    titleEn: 'Download Facebook Video by Link & Auto-Publish to Target Page (Vinh Ưng)',
+    categoryVi: '★ Mẫu Tối Ưu Chuẩn Dự Án VinceAuto',
+    titleEn: 'Multi-Platform Video Downloader + Google Drive & Sheets + Facebook Page Publisher',
     titleVi: 'Tải Video Đa Nền Tảng (FB / TikTok / YT / IG) ➔ Google Drive & Sheets ➔ Đăng Trang Facebook',
     descriptionVi:
-      'Đọc danh sách link bài viết & video từ Google Sheets (hỗ trợ Facebook, TikTok, YouTube, Instagram...), tải video về lưu trữ lên Google Drive, dùng Google Gemini viết caption cuốn hút, đăng lên Trang Facebook chỉ định và cập nhật trạng thái vào Google Sheets.',
-    departmentVi: 'Social Media & Video Automation',
+      'Tự động kích hoạt ngay khi bạn thêm link bài viết/video mới vào Google Sheets (hỗ trợ Facebook, TikTok, YouTube, Instagram...), tải video về lưu trữ lên Google Drive, dùng Google Gemini viết caption cuốn hút, đăng lên Trang Facebook chỉ định và cập nhật trạng thái vào Google Sheets.',
+    departmentVi: 'Social Media & Video',
     isVinceOptimizedFeatured: true,
-    nodesCount: 7,
+    nodesCount: 6,
     nodeNames: [
-      'Schedule Trigger (Quét Link Mới từ Google Sheets)',
-      'Google Sheets: Đọc Danh Sách Link Video & Bài Viết',
+      'Google Sheets Trigger (Khi có Link Video Mới)',
       'HTTP Request: Tải Video Đa Nền Tảng (FB/TikTok/YT/IG)',
       'Google Drive: Lưu Trữ Video Đã Tải',
       'AI Agent Google Gemini: Viết Caption & Hashtag',
@@ -638,33 +637,31 @@ const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
       'Google Sheets: Cập Nhật Link & Trạng Thái Đã Đăng',
     ],
     nodes: [
-      { id: 'fbv1', name: 'Schedule Trigger (Quét Link Mới)', type: 'trigger.cron', position: [80, 240], parameters: { cronExpression: '0 */2 * * *', timezone: 'Asia/Ho_Chi_Minh' } },
-      { id: 'fbv2', name: 'Google Sheets: Đọc Link Bài Viết & Video', type: 'vince.googleSheets.appendRow', position: [360, 240], parameters: { resource: 'Row', operation: 'read', range: 'VideoLinks!A:E', columns: 'platform,videoUrl,targetPageId,status,postUrl' } },
-      { id: 'fbv3', name: 'HTTP Request: Tải Video Đa Nền Tảng', type: 'core.httpRequest', position: [640, 240], parameters: { method: 'GET', url: '{{ $json.videoUrl || $json.url }}', responseFormat: 'file' } },
-      { id: 'fbv4', name: 'Google Drive: Lưu Trữ Video', type: 'vince.googleDrive.uploadFile', position: [920, 240], parameters: { resource: 'File', operation: 'upload', folderId: 'VinceAuto_Videos', fileName: '{{ $json.platform || "video" }}_{{ Date.now() }}.mp4' } },
-      { id: 'fbv5', name: 'AI Agent (Google Gemini)', type: 'vince.modelRouter', position: [1200, 240], parameters: { provider: 'gemini', providerType: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', model: 'gemini-3.1-flash-lite-preview', prompt: 'Viết caption ngắn gọn, thu hút kèm 5 hashtag tiếng Việt phù hợp cho video từ nền tảng {{ $json.platform || "MXH" }} ({{ $json.videoUrl || $json.url }})', systemPrompt: 'Bạn là chuyên gia sáng tạo nội dung Facebook cho Vinh Ưng.' } },
-      { id: 'fbv6', name: 'Facebook Graph: Publish Page Video', type: 'vince.facebook.video', position: [1500, 150], parameters: { resource: 'Video', operation: 'publish', pageId: '{{ $json.targetPageId }}', fileUrl: '{{ $json.driveFileUrl || $json.videoUrl }}', description: '{{ $json.aiResponse || $json.text }}' } },
-      { id: 'fbv7', name: 'Google Sheets: Cập Nhật Đã Đăng', type: 'vince.googleSheets.appendRow', position: [1500, 330], parameters: { resource: 'Row', operation: 'appendOrUpdate', range: 'VideoLinks!A:E', values: '{{ JSON.stringify({ platform: $json.platform, videoUrl: $json.videoUrl, driveUrl: $json.driveFileUrl, status: "PUBLISHED" }) }}' } },
+      { id: 'fbv1', name: 'Google Sheets Trigger: Khi có Link Mới', type: 'trigger.appEvent', position: [80, 240], parameters: { app: 'googleSheets', event: 'rowAdded', range: 'VideoLinks!A:E', columns: 'platform,videoUrl,targetPageId,status,postUrl' } },
+      { id: 'fbv2', name: 'HTTP Request: Tải Video Đa Nền Tảng', type: 'core.httpRequest', position: [380, 240], parameters: { method: 'GET', url: '{{ $json.videoUrl || $json.url }}', responseFormat: 'file' } },
+      { id: 'fbv3', name: 'Google Drive: Lưu Trữ Video', type: 'vince.googleDrive.uploadFile', position: [680, 240], parameters: { resource: 'File', operation: 'upload', folderId: 'VinceAuto_Videos', fileName: '{{ $json.platform || "video" }}_{{ Date.now() }}.mp4' } },
+      { id: 'fbv4', name: 'AI Agent (Google Gemini)', type: 'vince.modelRouter', position: [980, 240], parameters: { provider: 'gemini', providerType: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', model: 'gemini-3.1-flash-lite-preview', prompt: 'Viết caption ngắn gọn, thu hút kèm 5 hashtag tiếng Việt phù hợp cho video từ nền tảng {{ $json.platform || "MXH" }} ({{ $json.videoUrl || $json.url }})', systemPrompt: 'Bạn là chuyên gia sáng tạo nội dung mạng xã hội.' } },
+      { id: 'fbv5', name: 'Facebook Graph: Publish Page Video', type: 'vince.facebook.video', position: [1280, 150], parameters: { resource: 'Video', operation: 'publish', pageId: '{{ $json.targetPageId }}', fileUrl: '{{ $json.driveFileUrl || $json.videoUrl }}', description: '{{ $json.aiResponse || $json.text }}' } },
+      { id: 'fbv6', name: 'Google Sheets: Cập Nhật Đã Đăng', type: 'vince.googleSheets.appendRow', position: [1280, 330], parameters: { resource: 'Row', operation: 'appendOrUpdate', range: 'VideoLinks!A:E', values: '{{ JSON.stringify({ platform: $json.platform, videoUrl: $json.videoUrl, driveUrl: $json.driveFileUrl, status: "PUBLISHED" }) }}' } },
     ],
     connections: [
       { source: 'fbv1', target: 'fbv2' },
       { source: 'fbv2', target: 'fbv3' },
       { source: 'fbv3', target: 'fbv4' },
       { source: 'fbv4', target: 'fbv5' },
-      { source: 'fbv5', target: 'fbv6' },
-      { source: 'fbv5', target: 'fbv7' },
+      { source: 'fbv4', target: 'fbv6' },
     ],
   },
   {
     id: 'vince_tpl_chatbot_zalo_01',
-    fileName: 'VinhUng_Zalo_Chatbot_2Way.json',
-    relativePath: 'Vinh Ưng Cá Nhân Hóa / Chatbot AI Zalo OA',
+    fileName: 'VinceAuto_Zalo_Chatbot_2Way.json',
+    relativePath: 'VinceAuto Featured / Chatbot AI Zalo OA',
     category: 'VINCEAUTO_FEATURED',
-    categoryVi: '★ Mẫu Cá Nhân Hóa — Vinh Ưng (@ungvinh0407)',
-    titleEn: '2-Way Zalo OA AI Chatbot (Vinh Ưng)',
-    titleVi: 'Chatbot AI Zalo OA 2 Chiều — Cá nhân hóa cho Vinh Ưng',
+    categoryVi: '★ Mẫu Tối Ưu Chuẩn VinceAuto',
+    titleEn: '2-Way Zalo OA AI Chatbot',
+    titleVi: 'Chatbot AI Zalo OA 2 Chiều',
     descriptionVi:
-      'Mẫu chatbot Zalo OA tối ưu cho Vinh Ưng: Lắng nghe tin nhắn đến từ khách hàng, chuẩn hóa nội dung & SĐT bằng Edit Fields, gọi Google Gemini (gemini-3.1-flash-lite-preview) tư vấn và tự động trả lời qua Zalo OA.',
+      'Mẫu chatbot Zalo OA tối ưu: Lắng nghe tin nhắn đến từ khách hàng, chuẩn hóa nội dung & SĐT bằng Edit Fields, gọi Google Gemini (gemini-3.1-flash-lite-preview) tư vấn và tự động trả lời qua Zalo OA.',
     departmentVi: 'Chatbot AI & CSKH',
     isVinceOptimizedFeatured: true,
     nodesCount: 4,
@@ -675,9 +672,9 @@ const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
       'Zalo OA: Send Message / ZNS',
     ],
     nodes: [
-      { id: 'zl1', name: 'Zalo OA Trigger', type: 'trigger.chat', position: [80, 240], parameters: { channel: 'zalo', welcomeMessage: 'Xin chào! Trợ lý AI Zalo OA của Vinh Ưng sẵn sàng hỗ trợ.' } },
+      { id: 'zl1', name: 'Zalo OA Trigger', type: 'trigger.chat', position: [80, 240], parameters: { channel: 'zalo', welcomeMessage: 'Xin chào! Trợ lý AI Zalo OA sẵn sàng hỗ trợ.' } },
       { id: 'zl2', name: 'Edit Fields (Set)', type: 'transform.editFields', position: [380, 240], parameters: { mode: 'manual', fields: { userQuery: '{{ $json.text || $json.message.text }}', phone: '{{ $json.phone || "" }}' }, keepOnlySet: false } },
-      { id: 'zl3', name: 'AI Agent (Google Gemini)', type: 'vince.modelRouter', position: [680, 240], parameters: { provider: 'gemini', providerType: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', model: 'gemini-3.1-flash-lite-preview', prompt: '{{ $json.userQuery || $json.text }}', systemPrompt: 'Bạn là trợ lý ảo CSKH trên Zalo OA của Vinh Ưng. Hãy trả lời ngắn gọn, lịch sự, chính xác.' } },
+      { id: 'zl3', name: 'AI Agent (Google Gemini)', type: 'vince.modelRouter', position: [680, 240], parameters: { provider: 'gemini', providerType: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', model: 'gemini-3.1-flash-lite-preview', prompt: '{{ $json.userQuery || $json.text }}', systemPrompt: 'Bạn là trợ lý ảo CSKH trên Zalo OA. Hãy trả lời ngắn gọn, lịch sự, chính xác.' } },
       { id: 'zl4', name: 'Zalo OA: Send Message / ZNS', type: 'vince.zalo.sendZns', position: [980, 240], parameters: { resource: 'Zalo Message', operation: 'sendText', phone: '{{ $json.phone || "" }}', message: '{{ $json.aiResponse || $json.text }}' } },
     ],
     connections: [
@@ -688,14 +685,14 @@ const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
   },
   {
     id: 'vince_tpl_chatbot_social_02',
-    fileName: 'VinhUng_Social_Chatbot_Messenger_IG_Threads_TikTok.json',
-    relativePath: 'Vinh Ưng Cá Nhân Hóa / Chatbot Mạng xã hội',
+    fileName: 'VinceAuto_Social_Chatbot_Messenger_IG_Threads_TikTok.json',
+    relativePath: 'VinceAuto Featured / Chatbot Mạng xã hội',
     category: 'VINCEAUTO_FEATURED',
-    categoryVi: '★ Mẫu Cá Nhân Hóa — Vinh Ưng (@ungvinh0407)',
-    titleEn: 'Omnichannel Social Bot: Messenger, IG, Threads & TikTok (Vinh Ưng)',
-    titleVi: 'Bot AI Trả Lời Tự Động Messenger, Instagram, Threads & TikTok — Vinh Ưng',
+    categoryVi: '★ Mẫu Tối Ưu Chuẩn VinceAuto',
+    titleEn: 'Omnichannel Social Bot: Messenger, IG, Threads & TikTok',
+    titleVi: 'Bot AI Trả Lời Tự Động Messenger, Instagram, Threads & TikTok',
     descriptionVi:
-      'Mẫu chatbot mạng xã hội của Vinh Ưng: Lắng nghe bình luận & tin nhắn DM mới từ Messenger, Instagram, Meta Threads hoặc TikTok, lọc nội dung hợp lệ bằng Filter, gọi Google Gemini soạn phản hồi và tự động trả lời trên từng nền tảng.',
+      'Mẫu chatbot mạng xã hội: Lắng nghe bình luận & tin nhắn DM mới từ Messenger, Instagram, Meta Threads hoặc TikTok, lọc nội dung hợp lệ bằng Filter, gọi Google Gemini soạn phản hồi và tự động trả lời trên từng nền tảng.',
     departmentVi: 'Chatbot & Mạng xã hội',
     isVinceOptimizedFeatured: true,
     nodesCount: 6,
@@ -710,7 +707,7 @@ const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
     nodes: [
       { id: 'sb1', name: 'Social Media Trigger', type: 'trigger.socialMedia', position: [80, 240], parameters: { app: 'messenger_ig_threads_tiktok', event: 'message_or_comment' } },
       { id: 'sb2', name: 'Filter: Lọc tin nhắn hợp lệ', type: 'transform.filter', position: [380, 240], parameters: { condition: '$json.text && $json.text.length > 1' } },
-      { id: 'sb3', name: 'AI Agent (Google Gemini)', type: 'vince.modelRouter', position: [680, 240], parameters: { provider: 'gemini', providerType: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', model: 'gemini-3.1-flash-lite-preview', prompt: '{{ $json.text || $json.message.text }}', systemPrompt: 'Bạn là trợ lý ảo của Vinh Ưng, trả lời bình luận và tin nhắn DM trên mạng xã hội thân thiện, tự nhiên và hữu ích.' } },
+      { id: 'sb3', name: 'AI Agent (Google Gemini)', type: 'vince.modelRouter', position: [680, 240], parameters: { provider: 'gemini', providerType: 'gemini', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', model: 'gemini-3.1-flash-lite-preview', prompt: '{{ $json.text || $json.message.text }}', systemPrompt: 'Bạn là trợ lý ảo, trả lời bình luận và tin nhắn DM trên mạng xã hội thân thiện, tự nhiên và hữu ích.' } },
       { id: 'sb4', name: 'Messenger / Facebook: Reply', type: 'vince.facebook.postFeed', position: [1000, 100], parameters: { resource: 'Messenger', operation: 'sendMessage' } },
       { id: 'sb5', name: 'Instagram & Threads: Reply', type: 'vince.threads.action', position: [1000, 240], parameters: { resource: 'Reply', operation: 'createReply' } },
       { id: 'sb6', name: 'TikTok: Reply Comment', type: 'vince.tiktok.action', position: [1000, 380], parameters: { resource: 'Comment', operation: 'reply' } },
@@ -725,20 +722,19 @@ const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
   },
   {
     id: 'vince_tpl_social_tiktok_threads_01',
-    fileName: 'VinhUng_TikTok_Threads_Reels_Crosspost.json',
-    relativePath: 'Vinh Ưng Cá Nhân Hóa / Social Media Automation',
+    fileName: 'VinceAuto_TikTok_Threads_Reels_Crosspost.json',
+    relativePath: 'VinceAuto Featured / Social Media Automation',
     category: 'VINCEAUTO_FEATURED',
-    categoryVi: '★ Mẫu Cá Nhân Hóa — Vinh Ưng (@ungvinh0407)',
-    titleEn: 'AI Multi-Channel Social Publisher: TikTok, Meta Threads, IG Reels & YouTube Shorts (Vinh Ưng)',
-    titleVi: 'Tự động Sáng tạo & Đăng chéo Video lên TikTok, Threads, IG Reels & Shorts — Vinh Ưng',
+    categoryVi: '★ Mẫu Tối Ưu Chuẩn VinceAuto',
+    titleEn: 'AI Multi-Channel Social Publisher: TikTok, Meta Threads, IG Reels & YouTube Shorts',
+    titleVi: 'Tự động Sáng tạo & Đăng chéo Video lên TikTok, Threads, IG Reels & Shorts',
     descriptionVi:
-      'Quy trình tự động hóa mạng xã hội đa kênh cá nhân hóa cho Vinh Ưng: Lấy video từ Google Drive, dùng Google Gemini (gemini-3.1-flash-lite-preview) viết caption và hashtag xu hướng, xuất bản đồng loạt lên TikTok, Meta Threads, Instagram Reels và YouTube Shorts, rồi báo về Telegram.',
+      'Quy trình tự động hóa mạng xã hội đa kênh cá nhân hóa: Lấy video từ Google Drive, dùng Google Gemini (gemini-3.1-flash-lite-preview) viết caption và hashtag xu hướng, xuất bản đồng loạt lên TikTok, Meta Threads, Instagram Reels và YouTube Shorts, rồi báo về Telegram.',
     departmentVi: 'Social Media & Marketing',
     isVinceOptimizedFeatured: true,
-    nodesCount: 8,
+    nodesCount: 7,
     nodeNames: [
-      'Schedule Trigger (9:00 AM)',
-      'Google Drive: Get New Video/Media',
+      'Google Drive Trigger (Khi có Video Mới)',
       'AI Agent Google Gemini: Viết Caption & Hashtag',
       'TikTok: Publish Direct Video',
       'Threads (Meta): Publish Post & Threadstorm',
@@ -747,18 +743,16 @@ const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
       'Telegram: Báo cáo Đăng Đa Kênh',
     ],
     nodes: [
-      { id: 'n1', name: 'Schedule Trigger (9:00 AM)', type: 'trigger.cron', position: [80, 240], parameters: { cronExpression: '0 9 * * *', timezone: 'Asia/Ho_Chi_Minh' } },
-      { id: 'n2', name: 'Google Drive: Get Video & Media', type: 'vince.googleDrive.uploadFile', position: [380, 240], parameters: { resource: 'File', operation: 'search', folderId: 'social_media_queue' } },
-      { id: 'n3', name: 'AI Agent (Google Gemini)', type: 'vince.modelRouter', position: [680, 240], parameters: { provider: 'gemini', providerType: 'gemini', model: 'gemini-3.1-flash-lite-preview', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', prompt: 'Viết caption thu hút cho TikTok, chuỗi bài viết 500 ký tự cho Meta Threads và mô tả SEO cho YouTube Shorts từ chủ đề: {{ $json.name }}' } },
-      { id: 'n4', name: 'TikTok: Publish Direct Video', type: 'vince.tiktok.action', position: [980, 120], parameters: { resource: 'Video', operation: 'publishVideo', privacyLevel: 'PUBLIC_TO_EVERYONE' } },
-      { id: 'n5', name: 'Threads (Meta): Publish Post', type: 'vince.threads.action', position: [980, 260], parameters: { resource: 'Thread', operation: 'publishText', mediaType: 'TEXT' } },
-      { id: 'n6', name: 'Instagram Business: Publish Reel', type: 'vince.instagram.action', position: [980, 400], parameters: { resource: 'Reels', operation: 'publishReel', shareToFeed: true } },
-      { id: 'n7', name: 'YouTube & Shorts: Upload Video', type: 'vince.youtube.action', position: [1280, 240], parameters: { resource: 'Video', operation: 'uploadVideo', privacyStatus: 'public' } },
-      { id: 'n8', name: 'Telegram: Báo cáo Đăng Đa Kênh', type: 'vince.telegram', position: [1580, 240], parameters: { resource: 'message', operation: 'sendMessage', chatId: '{{ $json.chatId || $json.message.chat.id }}', message: '🚀 [Vinh Ưng Auto] Đã đăng thành công nội dung lên TikTok, Threads, Instagram Reels & YouTube Shorts!' } },
+      { id: 'n1', name: 'Google Drive Trigger: Video Mới', type: 'trigger.appEvent', position: [80, 240], parameters: { app: 'googleDrive', event: 'fileCreated', folderId: 'social_media_queue' } },
+      { id: 'n3', name: 'AI Agent (Google Gemini)', type: 'vince.modelRouter', position: [380, 240], parameters: { provider: 'gemini', providerType: 'gemini', model: 'gemini-3.1-flash-lite-preview', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', prompt: 'Viết caption thu hút cho TikTok, chuỗi bài viết 500 ký tự cho Meta Threads và mô tả SEO cho YouTube Shorts từ chủ đề: {{ $json.name }}' } },
+      { id: 'n4', name: 'TikTok: Publish Direct Video', type: 'vince.tiktok.action', position: [680, 120], parameters: { resource: 'Video', operation: 'publishVideo', privacyLevel: 'PUBLIC_TO_EVERYONE' } },
+      { id: 'n5', name: 'Threads (Meta): Publish Post', type: 'vince.threads.action', position: [680, 260], parameters: { resource: 'Thread', operation: 'publishText', mediaType: 'TEXT' } },
+      { id: 'n6', name: 'Instagram Business: Publish Reel', type: 'vince.instagram.action', position: [680, 400], parameters: { resource: 'Reels', operation: 'publishReel', shareToFeed: true } },
+      { id: 'n7', name: 'YouTube & Shorts: Upload Video', type: 'vince.youtube.action', position: [980, 240], parameters: { resource: 'Video', operation: 'uploadVideo', privacyStatus: 'public' } },
+      { id: 'n8', name: 'Telegram: Báo cáo Đăng Đa Kênh', type: 'vince.telegram', position: [1280, 240], parameters: { resource: 'message', operation: 'sendMessage', chatId: '{{ $json.chatId || $json.message.chat.id }}', message: '🚀 [VinceAuto] Đã đăng thành công nội dung lên TikTok, Threads, Instagram Reels & YouTube Shorts!' } },
     ],
     connections: [
-      { source: 'n1', target: 'n2' },
-      { source: 'n2', target: 'n3' },
+      { source: 'n1', target: 'n3' },
       { source: 'n3', target: 'n4' },
       { source: 'n3', target: 'n5' },
       { source: 'n3', target: 'n6' },
@@ -770,14 +764,14 @@ const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
   },
   {
     id: 'vince_tpl_social_comment_dm_02',
-    fileName: 'VinhUng_TikTok_Threads_IG_AutoReply_DM.json',
-    relativePath: 'Vinh Ưng Cá Nhân Hóa / Social Media CSKH',
+    fileName: 'VinceAuto_TikTok_Threads_IG_AutoReply_DM.json',
+    relativePath: 'VinceAuto Featured / Social Media CSKH',
     category: 'VINCEAUTO_FEATURED',
-    categoryVi: '★ Mẫu Cá Nhân Hóa — Vinh Ưng (@ungvinh0407)',
-    titleEn: 'TikTok, Threads & IG Comment Auto-Reply & DM Lead Closer (Vinh Ưng)',
+    categoryVi: '★ Mẫu Tối Ưu Chuẩn VinceAuto',
+    titleEn: 'TikTok, Threads & IG Comment Auto-Reply & DM Lead Closer',
     titleVi: 'Lắng nghe Bình luận TikTok, Threads & IG ➔ AI Gemini Trả lời & Gửi DM Chốt Đơn',
     descriptionVi:
-      'Khi khách hàng bình luận trên video TikTok, Meta Threads hoặc Reels Instagram của Vinh Ưng, hệ thống lọc bình luận hợp lệ, dùng Google Gemini phân tích ý định, trả lời bình luận và gửi DM kèm link sản phẩm, đồng thời lưu Lead vào Google Sheets.',
+      'Khi khách hàng bình luận trên video TikTok, Meta Threads hoặc Reels Instagram, hệ thống lọc bình luận hợp lệ, dùng Google Gemini phân tích ý định, trả lời bình luận và gửi DM kèm link sản phẩm, đồng thời lưu Lead vào Google Sheets.',
     departmentVi: 'CSKH & Mạng xã hội',
     isVinceOptimizedFeatured: true,
     nodesCount: 6,
@@ -808,36 +802,33 @@ const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
   },
   {
     id: 'vince_tpl_threads_threadstorm_03',
-    fileName: 'VinhUng_Threads_X_LinkedIn_Threadstorm.json',
-    relativePath: 'Vinh Ưng Cá Nhân Hóa / Content Repurposing',
+    fileName: 'VinceAuto_Threads_X_LinkedIn_Threadstorm.json',
+    relativePath: 'VinceAuto Featured / Content Repurposing',
     category: 'VINCEAUTO_FEATURED',
-    categoryVi: '★ Mẫu Cá Nhân Hóa — Vinh Ưng (@ungvinh0407)',
-    titleEn: 'Automated Threadstorm for Threads, X & LinkedIn from Notion (Vinh Ưng)',
-    titleVi: 'Biến bài viết Notion thành chuỗi Threadstorm trên Threads, X & LinkedIn — Vinh Ưng',
+    categoryVi: '★ Mẫu Tối Ưu Chuẩn VinceAuto',
+    titleEn: 'Automated Threadstorm for Threads, X & LinkedIn from Notion',
+    titleVi: 'Biến bài viết Notion thành chuỗi Threadstorm trên Threads, X & LinkedIn',
     descriptionVi:
-      'Tự động lấy bài viết dài từ Notion, dùng Multi-Agent Supervisor (Google Gemini) chia nhỏ thành chuỗi đoạn 500 ký tự cuốn hút, rồi đăng tự động lên Meta Threads, X (Twitter) và LinkedIn cho Vinh Ưng.',
+      'Tự động lấy bài viết dài từ Notion, dùng Multi-Agent Supervisor (Google Gemini) chia nhỏ thành chuỗi đoạn 500 ký tự cuốn hút, rồi đăng tự động lên Meta Threads, X (Twitter) và LinkedIn.',
     departmentVi: 'Content & Thương hiệu cá nhân',
     isVinceOptimizedFeatured: true,
-    nodesCount: 6,
+    nodesCount: 5,
     nodeNames: [
-      'Schedule Trigger (8:30 AM)',
-      'Notion: Query Database Bài Viết Mới',
+      'Notion Trigger (Khi có Bài Viết Mới)',
       'Vince Multi-Agent Supervisor (Google Gemini)',
       'Threads (Meta): Publish Carousel & Threadstorm',
       'X (Twitter) & LinkedIn: Publish Post',
       'Telegram: Thông báo Link Bài Đăng',
     ],
     nodes: [
-      { id: 't1', name: 'Schedule Trigger (8:30 AM)', type: 'trigger.cron', position: [80, 250], parameters: { cronExpression: '30 8 * * *' } },
-      { id: 't2', name: 'Notion: Query Database Bài Viết', type: 'vince.notion.action', position: [380, 250], parameters: { resource: 'Database', operation: 'query' } },
-      { id: 't3', name: 'Vince Multi-Agent Supervisor (Google Gemini)', type: 'vince.agentManager', position: [680, 250], parameters: { provider: 'gemini', providerType: 'gemini', model: 'gemini-3.1-flash-lite-preview', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', agentRole: 'supervisor', taskDescription: 'Chuyển đổi bài viết dài thành chuỗi 5 bài Threads (dưới 500 ký tự/bài) và 1 bài LinkedIn cho Vinh Ưng.' } },
-      { id: 't4', name: 'Threads (Meta): Publish Threadstorm', type: 'vince.threads.action', position: [980, 170], parameters: { resource: 'Thread', operation: 'publishText' } },
-      { id: 't5', name: 'X (Twitter) & LinkedIn: Publish Post', type: 'vince.whatsappSocial.action', position: [980, 330], parameters: { resource: 'LinkedIn', operation: 'Publish Post' } },
-      { id: 't6', name: 'Telegram: Send Message', type: 'vince.telegram', position: [1280, 250], parameters: { resource: 'message', operation: 'sendMessage', chatId: '{{ $json.chatId || $json.message.chat.id }}', message: '🤖 [Vinh Ưng Auto] Chuỗi bài đăng Threads/LinkedIn đã sẵn sàng!' } },
+      { id: 't1', name: 'Notion Trigger: Bài Viết Mới', type: 'trigger.appEvent', position: [80, 250], parameters: { app: 'notion', event: 'pageAdded' } },
+      { id: 't3', name: 'Vince Multi-Agent Supervisor (Google Gemini)', type: 'vince.agentManager', position: [380, 250], parameters: { provider: 'gemini', providerType: 'gemini', model: 'gemini-3.1-flash-lite-preview', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', agentRole: 'supervisor', taskDescription: 'Chuyển đổi bài viết dài thành chuỗi 5 bài Threads (dưới 500 ký tự/bài) và 1 bài LinkedIn.' } },
+      { id: 't4', name: 'Threads (Meta): Publish Threadstorm', type: 'vince.threads.action', position: [680, 170], parameters: { resource: 'Thread', operation: 'publishText' } },
+      { id: 't5', name: 'X (Twitter) & LinkedIn: Publish Post', type: 'vince.whatsappSocial.action', position: [680, 330], parameters: { resource: 'LinkedIn', operation: 'Publish Post' } },
+      { id: 't6', name: 'Telegram: Send Message', type: 'vince.telegram', position: [980, 250], parameters: { resource: 'message', operation: 'sendMessage', chatId: '{{ $json.chatId || $json.message.chat.id }}', message: '🤖 [VinceAuto] Chuỗi bài đăng Threads/LinkedIn đã sẵn sàng!' } },
     ],
     connections: [
-      { source: 't1', target: 't2' },
-      { source: 't2', target: 't3' },
+      { source: 't1', target: 't3' },
       { source: 't3', target: 't4' },
       { source: 't3', target: 't5' },
       { source: 't4', target: 't6' },
@@ -846,14 +837,14 @@ const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
   },
   {
     id: 'vince_tpl_shopee_tiktokshop_zalo_04',
-    fileName: 'VinhUng_Shopee_TikTokShop_ZaloZNS.json',
-    relativePath: 'Vinh Ưng Cá Nhân Hóa / Vietnam E-Commerce',
+    fileName: 'VinceAuto_Shopee_TikTokShop_ZaloZNS.json',
+    relativePath: 'VinceAuto Featured / Vietnam E-Commerce',
     category: 'VINCEAUTO_FEATURED',
-    categoryVi: '★ Mẫu Cá Nhân Hóa — Vinh Ưng (@ungvinh0407)',
-    titleEn: 'Shopee, TikTok Shop & Lazada Order Automation + Zalo ZNS + Sheets (Vinh Ưng)',
+    categoryVi: '★ Mẫu Tối Ưu Chuẩn VinceAuto',
+    titleEn: 'Shopee, TikTok Shop & Lazada Order Automation + Zalo ZNS + Sheets',
     titleVi: 'Đồng bộ Đơn hàng Shopee, TikTok Shop & Lazada ➔ AI Gemini ➔ Google Sheets & Zalo ZNS',
     descriptionVi:
-      'Mẫu quy trình thương mại điện tử tối ưu cho Vinh Ưng: Nhận đơn hàng mới từ Shopee/TikTok Shop qua Webhook, lọc đơn hợp lệ, dùng Google Gemini phân loại khách hàng, ghi sổ Google Sheets và gửi tin nhắn xác nhận Zalo ZNS.',
+      'Mẫu quy trình thương mại điện tử tối ưu: Nhận đơn hàng mới từ Shopee/TikTok Shop qua Webhook, lọc đơn hợp lệ, dùng Google Gemini phân loại khách hàng, ghi sổ Google Sheets và gửi tin nhắn xác nhận Zalo ZNS.',
     departmentVi: 'Thương mại điện tử (TMĐT)',
     isVinceOptimizedFeatured: true,
     nodesCount: 6,
@@ -883,11 +874,11 @@ const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
   },
   {
     id: 'vince_tpl_vietqr_momo_payment_05',
-    fileName: 'VinhUng_VietQR_MoMo_Reconciliation.json',
-    relativePath: 'Vinh Ưng Cá Nhân Hóa / Finance & Payment',
+    fileName: 'VinceAuto_VietQR_MoMo_Reconciliation.json',
+    relativePath: 'VinceAuto Featured / Finance & Payment',
     category: 'VINCEAUTO_FEATURED',
-    categoryVi: '★ Mẫu Cá Nhân Hóa — Vinh Ưng (@ungvinh0407)',
-    titleEn: 'VietQR, MoMo & VNPAY Payment Reconciliation + Gmail + Sheets (Vinh Ưng)',
+    categoryVi: '★ Mẫu Tối Ưu Chuẩn VinceAuto',
+    titleEn: 'VietQR, MoMo & VNPAY Payment Reconciliation + Gmail + Sheets',
     titleVi: 'Đối soát Thanh toán VietQR, MoMo & VNPAY ➔ AI Gemini ➔ Google Sheets & Telegram',
     descriptionVi:
       'Nhận callback IPN thanh toán thành công từ VietQR, MoMo hoặc VNPAY, chuẩn hóa dữ liệu bằng Edit Fields, dùng Google Gemini đối soát mã đơn hàng, cập nhật Google Sheets, gửi biên lai Gmail và báo biến động số dư về Telegram.',
@@ -908,7 +899,7 @@ const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
       { id: 'p3', name: 'AI Agent (Google Gemini)', type: 'vince.modelRouter', position: [680, 250], parameters: { provider: 'gemini', providerType: 'gemini', model: 'gemini-3.1-flash-lite-preview', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', prompt: 'Trích xuất mã đơn hàng từ nội dung chuyển khoản và tạo biên lai xác nhận: {{ JSON.stringify($json) }}' } },
       { id: 'p4', name: 'Google Sheets: Append or Update Row', type: 'vince.googleSheets.appendRow', position: [980, 160], parameters: { resource: 'Row', operation: 'appendOrUpdate', range: 'Payments!A:G' } },
       { id: 'p5', name: 'Gmail: Send Email Receipt', type: 'vince.gmail.sendEmail', position: [980, 340], parameters: { resource: 'Message', operation: 'send' } },
-      { id: 'p6', name: 'Telegram: Báo Biến Động Số Dư', type: 'vince.telegram', position: [1280, 250], parameters: { resource: 'message', operation: 'sendMessage', chatId: '{{ $json.chatId || $json.message.chat.id }}', message: '💰 [Vinh Ưng Auto] Nhận thanh toán thành công qua VietQR/MoMo!' } },
+      { id: 'p6', name: 'Telegram: Báo Biến Động Số Dư', type: 'vince.telegram', position: [1280, 250], parameters: { resource: 'message', operation: 'sendMessage', chatId: '{{ $json.chatId || $json.message.chat.id }}', message: '💰 [VinceAuto] Nhận thanh toán thành công qua VietQR/MoMo!' } },
     ],
     connections: [
       { source: 'p1', target: 'p2' },
@@ -1028,14 +1019,14 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
             <div className="min-w-0">
               <div className="flex items-center space-x-2">
                 <h2 className="text-sm font-bold text-[#f0f2f5] tracking-tight truncate">
-                  Mẫu Dự Án Cá Nhân Hóa — Vinh Ưng
+                  Kho Mẫu Dự Án — VinceAuto
                 </h2>
                 <span className="px-2 py-0.5 text-[10.5px] font-semibold rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30 shrink-0">
                   Google Gemini
                 </span>
               </div>
               <p className="text-[11px] text-zinc-400 truncate mt-0.5">
-                Đã nhập sẵn @ungvinh0407 • Telegram ID 1869249751 • Model {GEMINI_DEFAULT_CONFIG.models}
+                Chuẩn hóa Node VinceAuto • Model {GEMINI_DEFAULT_CONFIG.models}
               </p>
             </div>
           </div>
@@ -1235,8 +1226,7 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
                     <span>Thông tin đã nhập sẵn</span>
                   </div>
                   <div className="text-zinc-300">• AI: <span className="font-mono text-zinc-100">Google Gemini</span> ({GEMINI_DEFAULT_CONFIG.models})</div>
-                  <div className="text-zinc-300">• Telegram: <span className="font-mono text-zinc-100">@ungvinh0407</span> (ID: <span className="font-mono">1869249751</span>)</div>
-                </div>
+                                  </div>
 
                 {/* Vertical Flow Steps */}
                 <div className="space-y-2">
