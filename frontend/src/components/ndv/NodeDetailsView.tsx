@@ -1414,18 +1414,20 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                         )}
                       </div>
 
-                      <div className="text-zinc-300 text-[11.5px] leading-relaxed space-y-1 pt-1 border-t border-[#1e3a52]">
-                        <div>
-                          2. <strong>Người nhận (Chat ID):</strong> Mặc định{' '}
-                          <code className="bg-black/50 px-1 py-0.5 rounded text-sky-200 font-mono">{'{{ $json.chatId || $json.message.chat.id }}'}</code>{' '}
-                          — bot tự động trả lời đúng người vừa nhắn, không giới hạn người dùng.
+                      {!isTrigger && (
+                        <div className="text-zinc-300 text-[11.5px] leading-relaxed space-y-1 pt-1 border-t border-[#1e3a52]">
+                          <div>
+                            2. <strong>Người nhận (Chat ID):</strong> Mặc định{' '}
+                            <code className="bg-black/50 px-1 py-0.5 rounded text-sky-200 font-mono">{'{{ $json.chatId || $json.message.chat.id }}'}</code>{' '}
+                            — bot tự động trả lời đúng người vừa nhắn, không giới hạn người dùng.
+                          </div>
+                          <div>
+                            3. <strong>Nội dung trả lời:</strong> Mặc định{' '}
+                            <code className="bg-black/50 px-1 py-0.5 rounded text-amber-300 font-mono">{'{{ $json.aiResponse || $json.text }}'}</code>{' '}
+                            — lấy câu trả lời từ nút AI Agent phía trước (có thể dùng bất kỳ AI nào có API).
+                          </div>
                         </div>
-                        <div>
-                          3. <strong>Nội dung trả lời:</strong> Mặc định{' '}
-                          <code className="bg-black/50 px-1 py-0.5 rounded text-amber-300 font-mono">{'{{ $json.aiResponse || $json.text }}'}</code>{' '}
-                          — lấy câu trả lời từ nút AI Agent phía trước (có thể dùng bất kỳ AI nào có API).
-                        </div>
-                      </div>
+                      )}
                     </div>
                   )}
 

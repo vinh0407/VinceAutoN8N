@@ -441,10 +441,22 @@ export const VinceCustomNode = memo((props: any) => {
       </div>
 
       {/* 5. TEXT BELOW NODE (Screenshot: When clicking 'Execute workflow') */}
-      <div className="mt-2.5 text-center max-w-[150px] select-none pointer-events-none">
+      <div className="mt-2.5 text-center max-w-[160px] select-none pointer-events-none">
         <div className="text-[13px] font-medium text-white tracking-normal leading-[1.2] whitespace-pre-line">
           {triggerTitle}
         </div>
+        {(() => {
+          const p = nodeData.parameters || {};
+          let sub = '';
+          if (isTrigger && Array.isArray(p.updates) && p.updates.length > 0) {
+            sub = `Updates: ${p.updates.join(', ').toLowerCase()}`;
+          } else if (p.operation && p.resource) {
+            sub = `${p.operation}: ${String(p.resource).toLowerCase()}`;
+          } else if (p.model) {
+            sub = `Model: ${p.model === 'custom' ? p.customModel || 'custom' : p.model}`;
+          }
+          return sub ? <div className="text-[11px] text-zinc-400 mt-0.5 truncate">{sub}</div> : null;
+        })()}
       </div>
     </div>
   );
