@@ -21,6 +21,9 @@ services:
         value: crouton-alpha-free
       - key: OPENCODE2_API_KEY
         sync: false
+      # Google Gemini AI Studio API key (for AI Workflow Builder & Gemini AI Agent nodes)
+      - key: GEMINI_API_KEY
+        sync: false
       # Telegram bot token from @BotFather (can also be set inside the app)
       - key: TELEGRAM_BOT_TOKEN
         sync: false

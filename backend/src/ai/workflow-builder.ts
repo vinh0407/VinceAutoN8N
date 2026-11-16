@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { IWorkflow, INode, IConnection } from '../engine/types.js';
 import { globalAIRouter } from './router.js';
 import { DEFAULT_OPENCODE2_PROVIDER } from './providers/openai.js';
+import { globalWorkflowStore } from '../storage/store.js';
 
 export interface IAIBuildPlan {
   summary: string;
@@ -152,7 +153,7 @@ export class AIWorkflowBuilder {
   static async buildFromPrompt(
     prompt: string,
     existingWorkflow?: IWorkflow,
-    provider: string = 'opencode2',
+    provider: string = 'gemini',
     customOptions?: { baseUrl?: string; model?: string; apiKey?: string }
   ): Promise<IAIBuildPlan> {
     const trimmed = prompt.trim();
@@ -169,10 +170,22 @@ export class AIWorkflowBuilder {
     }
 
     const cleanPrompt = trimmed.replace(/^\/(build|create|workflow)\s+/i, '').trim() || trimmed;
-    const activeProvider = provider || 'opencode2';
-    const activeBaseUrl = (customOptions?.baseUrl || DEFAULT_OPENCODE2_PROVIDER.baseUrl).trim();
-    const activeModel = (customOptions?.model || DEFAULT_OPENCODE2_PROVIDER.defaultModel).trim();
-    const activeApiKey = (customOptions?.apiKey || DEFAULT_OPENCODE2_PROVIDER.apiKey).trim();
+    const activeProvider = (provider || 'gemini').trim();
+    const activeBaseUrl = (
+      customOptions?.baseUrl ||
+      (activeProvider === 'gemini' ? 'https://generativelanguage.googleapis.com/v1beta' : DEFAULT_OPENCODE2_PROVIDER.baseUrl)
+    ).trim();
+    const activeModel = (
+      customOptions?.model ||
+      (activeProvider === 'gemini' ? 'gemini-3.1-flash-lite-preview' : DEFAULT_OPENCODE2_PROVIDER.defaultModel)
+    ).trim();
+    const creds = globalWorkflowStore.getCredentials();
+    const activeApiKey = (
+      customOptions?.apiKey ||
+      (activeProvider === 'gemini'
+        ? creds?.GEMINI_API_KEY || process.env.GEMINI_API_KEY || ''
+        : creds?.OPENCODE2_API_KEY || process.env.OPENCODE2_API_KEY || '')
+    ).trim();
 
     const systemInstruction = `Bạn là VinceAuto AI Architect vận hành trên model "${activeModel}" (${activeProvider} • ${activeBaseUrl}).
 Nhiệm vụ của bạn là phân tích yêu cầu của người dùng và thiết kế một JSON workflow tự động hóa hoàn chỉnh, logic chặt chẽ, sử dụng đúng mã "type" và tên chuẩn của các nút trong VinceAuto.
@@ -187,7 +200,8 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
 5. Trong tham số của các nút AI ("vince.modelRouter", "vince.agentManager", "ai.agent.*"), đặt provider="${activeProvider}", model="${activeModel}", baseUrl="${activeBaseUrl}".
 6. Với botchat Telegram: dùng chatId="{{ $json.chatId || $json.message.chat.id }}" và message="{{ $json.aiResponse || $json.text }}" để ai nhắn bot cũng tự trả lời đúng người đó (TUYỆT ĐỐI không hardcode chatId cố định).
 7. Sắp xếp tọa độ position [X, Y] từ trái sang phải cách đều 300px (nhánh song song đặt cách nhau 180px theo trục Y).
-8. Trả về KẾT QUẢ DUY NHẤT dưới dạng JSON hợp lệ (không kèm văn bản ngoài JSON):
+8. Với quy trình tải video/nội dung từ link (Facebook/TikTok/YouTube) rồi đăng lại lên Trang/Kênh chỉ định: luôn đi theo luồng logic Trigger (Form/Webhook/Manual) -> HTTP Request (Tải thông tin & file video) -> Edit Fields (Chuẩn hóa URL video & metadata) -> AI Agent (Viết caption/hashtags thu hút) -> Hành động đích (Facebook Video: "vince.facebook.video" hoặc YouTube/TikTok).
+9. Trả về KẾT QUẢ DUY NHẤT dưới dạng JSON hợp lệ (không kèm văn bản ngoài JSON):
 {
   "summary": "Tóm tắt quy trình tự động hóa",
   "steps": ["Bước 1: ...", "Bước 2: ...", "Bước 3: ..."],
@@ -797,9 +811,15 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
 
       // Apply selected AI model/baseUrl on AI nodes
       if (type === 'vince.modelRouter' || type === 'vince.agentManager' || type.startsWith('ai.')) {
-        params.provider = opts.provider || params.provider || 'opencode2';
-        params.baseUrl = opts.baseUrl || params.baseUrl || DEFAULT_OPENCODE2_PROVIDER.baseUrl;
-        params.model = opts.model || params.model || DEFAULT_OPENCODE2_PROVIDER.defaultModel;
+        params.provider = opts.provider || params.provider || 'gemini';
+        params.baseUrl =
+          opts.baseUrl ||
+          params.baseUrl ||
+          (params.provider === 'gemini' ? 'https://generativelanguage.googleapis.com/v1beta' : DEFAULT_OPENCODE2_PROVIDER.baseUrl);
+        params.model =
+          opts.model ||
+          params.model ||
+          (params.provider === 'gemini' ? 'gemini-3.1-flash-lite-preview' : DEFAULT_OPENCODE2_PROVIDER.defaultModel);
         if (opts.apiKey) params.apiKey = opts.apiKey;
       }
 
@@ -875,17 +895,11 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
   ): IAIBuildPlan {
     const p = prompt.toLowerCase();
     const isDefaultDeprecated = !opts?.model || opts.model === 'crouton-alpha-free';
-    const isFinanceOrReason = p.includes('đối soát') || p.includes('thanh toán') || p.includes('momo') || p.includes('vietqr') || p.includes('phân tích');
-    const isCodeOrDb = p.includes('database') || p.includes('sql') || p.includes('postgres') || p.includes('devops') || p.includes('code');
-    const activeProvider = isDefaultDeprecated ? 'kilo' : (opts?.provider || 'kilo');
-    const activeBaseUrl = isDefaultDeprecated ? 'https://ai-gateway.kilo.ai/api/v1' : (opts?.baseUrl || 'https://ai-gateway.kilo.ai/api/v1');
-    const activeModel = isDefaultDeprecated
-      ? isCodeOrDb
-        ? 'cohere/north-mini-code:free'
-        : isFinanceOrReason
-        ? 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'
-        : 'kilo-auto/free'
-      : opts!.model;
+    const activeProvider = isDefaultDeprecated ? 'gemini' : opts?.provider || 'gemini';
+    const activeBaseUrl = isDefaultDeprecated
+      ? 'https://generativelanguage.googleapis.com/v1beta'
+      : opts?.baseUrl || 'https://generativelanguage.googleapis.com/v1beta';
+    const activeModel = isDefaultDeprecated ? 'gemini-3.1-flash-lite-preview' : opts!.model;
     const nodes: INode[] = [];
     const connections: IConnection[] = [];
     const steps: string[] = [];
@@ -1088,7 +1102,7 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
               }
             : {
                 source: 'VinceAuto_Pipeline',
-                aiProvider: 'Opencode2 (crouton-alpha-free)',
+                aiProvider: `${activeProvider} (${activeModel})`,
                 timestamp: '{{ new Date().toISOString() }}',
               },
           keepOnlySet: false,
@@ -1141,7 +1155,7 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
         position: nextPos(),
         parameters: {
           provider: activeProvider,
-          providerType: 'openai',
+          providerType: activeProvider === 'gemini' ? 'gemini' : 'openai',
           baseUrl: activeBaseUrl,
           model: activeModel,
           ...(opts?.apiKey ? { apiKey: opts.apiKey } : {}),

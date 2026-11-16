@@ -73,9 +73,17 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [activeHistoryChat, setActiveHistoryChat] = useState<IAIChatHistoryItem | null>(null);
   const [activeHistoryLog, setActiveHistoryLog] = useState<IAIAgentProjectLog | null>(null);
-  const [selectedModel, setSelectedModel] = useState<string>('crouton-alpha-free');
+  const [selectedModel, setSelectedModel] = useState<string>('gemini-3.1-flash-lite-preview');
   const [isCustomModel, setIsCustomModel] = useState(false);
-  const [customBaseUrl, setCustomBaseUrl] = useState<string>('https://opencode.ai/zen/v1');
+  const [customBaseUrl, setCustomBaseUrl] = useState<string>('https://generativelanguage.googleapis.com/v1beta');
+  const [customApiKey, setCustomApiKey] = useState<string>(() => {
+    try {
+      return localStorage.getItem('vinceauto:gemini_api_key') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [apiKeySavedMsg, setApiKeySavedMsg] = useState<string | null>(null);
   const [showProviderDetails, setShowProviderDetails] = useState(false);
   const [nodePromptCategory, setNodePromptCategory] = useState<
     'all' | 'trigger' | 'app' | 'transform' | 'flow_core' | 'ai_agent'
@@ -109,6 +117,10 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
 
     const effectiveBaseUrl = presetOverride?.baseUrl || customBaseUrl;
     const effectiveModel = presetOverride?.model || selectedModel;
+    const effectiveProvider =
+      effectiveBaseUrl.includes('generativelanguage.googleapis.com') || effectiveModel.startsWith('gemini-')
+        ? 'gemini'
+        : 'openai';
     if (presetOverride?.baseUrl) setCustomBaseUrl(presetOverride.baseUrl);
     if (presetOverride?.model) setSelectedModel(presetOverride.model);
 
@@ -120,12 +132,21 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
     setActiveHistoryChat(null);
 
     try {
+      const trimmedKey = customApiKey.trim();
+      if (trimmedKey) {
+        try {
+          localStorage.setItem('vinceauto:gemini_api_key', trimmedKey);
+        } catch {
+          // ignore storage quota errors
+        }
+      }
       const res = await axios.post('/api/ai/build', {
         prompt: promptToRun,
         existingWorkflow: currentWorkflow || { id: 'wf_draft', name: 'Bản vẽ mới', nodes: [], connections: [] },
-        provider: 'openai',
+        provider: effectiveProvider,
         baseUrl: effectiveBaseUrl,
         model: effectiveModel,
+        ...(trimmedKey ? { apiKey: trimmedKey } : {}),
       });
 
       if (res.data?.success && res.data?.plan) {
@@ -265,16 +286,29 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
                 type="text"
                 value={customBaseUrl}
                 onChange={(e) => setCustomBaseUrl(e.target.value)}
-                placeholder="https://opencode.ai/zen/v1"
+                placeholder="https://generativelanguage.googleapis.com/v1beta"
                 className="w-full bg-[#151518] border border-[#2f2f35] rounded-md px-2.5 py-1 text-xs font-mono text-sky-300 focus:outline-none focus:border-[#e6e8ec]"
               />
               <div className="flex items-center flex-wrap gap-1 pt-0.5">
                 <button
                   type="button"
-                  onClick={() => setCustomBaseUrl('https://opencode.ai/zen/v1')}
+                  onClick={() => {
+                    setCustomBaseUrl('https://generativelanguage.googleapis.com/v1beta');
+                    setSelectedModel('gemini-3.1-flash-lite-preview');
+                  }}
+                  className="px-1.5 py-0.5 rounded text-[9.5px] bg-sky-500/20 border border-sky-500/40 hover:bg-sky-500/30 text-sky-200 font-mono"
+                >
+                  Google Gemini
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomBaseUrl('https://ai-gateway.kilo.ai/api/v1');
+                    setSelectedModel('kilo-auto/free');
+                  }}
                   className="px-1.5 py-0.5 rounded text-[9.5px] bg-[#26262b] hover:bg-[#323238] text-zinc-300 font-mono"
                 >
-                  Opencode2
+                  Kilo Free
                 </button>
                 <button
                   type="button"
@@ -296,6 +330,44 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
                   className="px-1.5 py-0.5 rounded text-[9.5px] bg-[#26262b] hover:bg-[#323238] text-zinc-300 font-mono"
                 >
                   Ollama
+                </button>
+              </div>
+            </div>
+
+            {/* Gemini / Provider API Key */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-zinc-300 font-medium">
+                <span>API Key (Google Gemini AI Studio):</span>
+                {apiKeySavedMsg && <span className="text-[10px] text-emerald-400">{apiKeySavedMsg}</span>}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="password"
+                  value={customApiKey}
+                  onChange={(e) => {
+                    setCustomApiKey(e.target.value);
+                    setApiKeySavedMsg(null);
+                  }}
+                  placeholder="Dán Gemini API Key của bạn vào đây..."
+                  className="flex-1 bg-[#151518] border border-[#2f2f35] rounded-md px-2.5 py-1 text-xs font-mono text-zinc-100 focus:outline-none focus:border-sky-400"
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const key = customApiKey.trim();
+                    try {
+                      localStorage.setItem('vinceauto:gemini_api_key', key);
+                      if (key) {
+                        await axios.post('/api/credentials', { GEMINI_API_KEY: key });
+                      }
+                      setApiKeySavedMsg(key ? 'Đã lưu Key!' : 'Đã xóa Key');
+                    } catch {
+                      setApiKeySavedMsg('Đã lưu cục bộ');
+                    }
+                  }}
+                  className="px-2 py-1 rounded-md text-[10px] font-semibold bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/40 text-sky-200 cursor-pointer shrink-0"
+                >
+                  Lưu Key
                 </button>
               </div>
             </div>
@@ -324,17 +396,19 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
                   }}
                   className="w-full bg-[#151518] border border-[#2f2f35] rounded-md px-2.5 py-1 text-xs text-zinc-100 focus:outline-none focus:border-[#e6e8ec]"
                 >
-                  <optgroup label="Opencode2 (Miễn phí)">
-                    <option value="crouton-alpha-free">crouton-alpha-free (Opencode2 - Miễn phí không giới hạn)</option>
+                  <optgroup label="Google Gemini (Mặc định - Nhanh & Thông minh)">
+                    <option value="gemini-3.1-flash-lite-preview">gemini-3.1-flash-lite-preview (Gemini 3.1 Flash Lite - Khuyên dùng)</option>
+                    <option value="gemini-3-flash-preview">gemini-3-flash-preview (Gemini 3 Flash Preview)</option>
+                    <option value="gemini-pro-latest">gemini-pro-latest (Gemini Pro - Suy luận sâu)</option>
+                  </optgroup>
+                  <optgroup label="Kilo Gateway (Miễn phí)">
+                    <option value="kilo-auto/free">kilo-auto/free (Kilo Auto Free)</option>
+                    <option value="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free">nemotron-3-nano-omni-30b:free (Reasoning)</option>
                   </optgroup>
                   <optgroup label="OpenAI">
                     <option value="gpt-4o">gpt-4o (OpenAI Omni Flagship)</option>
                     <option value="gpt-4o-mini">gpt-4o-mini (OpenAI Fast & Cost-effective)</option>
                     <option value="o3-mini">o3-mini (OpenAI Reasoning)</option>
-                  </optgroup>
-                  <optgroup label="Google Gemini">
-                    <option value="gemini-2.0-flash">gemini-2.0-flash (Google Gemini Flash)</option>
-                    <option value="gemini-1.5-pro">gemini-1.5-pro (Google Gemini Pro)</option>
                   </optgroup>
                   <optgroup label="Anthropic Claude">
                     <option value="claude-3-5-sonnet">claude-3-5-sonnet (Anthropic Sonnet 3.5)</option>
