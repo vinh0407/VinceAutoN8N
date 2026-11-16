@@ -1,6 +1,22 @@
 {
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": "https://vinceauto-backend.onrender.com/api/$1"
+    },
+    {
+      "source": "/webhook/(.*)",
+      "destination": "https://vinceauto-backend.onrender.com/webhook/$1"
+    },
+    {
+      "source": "/health",
+      "destination": "https://vinceauto-backend.onrender.com/health"
+    },
+    {
+      "source": "/ping",
+      "destination": "https://vinceauto-backend.onrender.com/ping"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
