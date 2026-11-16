@@ -135,7 +135,14 @@ export class VinceModelRouterNode implements INodeType {
       const apiKey = node.parameters.apiKey || context.credentials?.OPENCODE2_API_KEY || process.env.OPENCODE2_API_KEY;
 
       let explicitProvider: string | undefined = node.parameters.provider;
-      if (!explicitProvider) {
+      const isCustomOpenAiGateway =
+        Boolean(baseUrl) &&
+        !baseUrl.includes('generativelanguage.googleapis.com') &&
+        !baseUrl.includes('api.anthropic.com') &&
+        !baseUrl.includes('11434');
+      if (isCustomOpenAiGateway) {
+        explicitProvider = 'openai';
+      } else if (!explicitProvider) {
         if (selectedModel.startsWith('gemini')) explicitProvider = 'gemini';
         else if (selectedModel.startsWith('claude')) explicitProvider = 'claude';
         else if (selectedModel.startsWith('llama') && !baseUrl.includes('groq')) explicitProvider = 'ollama';

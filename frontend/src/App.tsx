@@ -48,6 +48,12 @@ export function App() {
   // React Flow states
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const nodesRef = React.useRef<Node[]>(nodes);
+  const edgesRef = React.useRef<Edge[]>(edges);
+  nodesRef.current = nodes;
+  edgesRef.current = edges;
+  const autoSaveTimerRef = React.useRef<number | null>(null);
+  const skipNextAutoSaveRef = React.useRef<boolean>(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [activeNdvNodeId, setActiveNdvNodeId] = useState<string | null>(null);
 
@@ -390,6 +396,7 @@ export function App() {
   };
 
   const loadWorkflow = (wf: IWorkflow) => {
+    skipNextAutoSaveRef.current = true;
     setCurrentWorkflow(wf);
     try {
       if (wf?.id) localStorage.setItem('vinceauto:lastWorkflowId', wf.id);
@@ -439,21 +446,23 @@ export function App() {
     [setEdges]
   );
 
-  const handleSaveWorkflow = async (overrides?: Partial<IWorkflow>) => {
+  const handleSaveWorkflow = async (overrides?: Partial<IWorkflow>, silent = false) => {
     if (!currentWorkflow) return;
 
+    const latestNodes = nodesRef.current;
+    const latestEdges = edgesRef.current;
     const updatedWorkflow: IWorkflow = {
       ...currentWorkflow,
       ...(overrides || {}),
       projectId: currentWorkflow.projectId || selectedProjectId || undefined,
-      nodes: nodes.map((n) => ({
+      nodes: latestNodes.map((n) => ({
         id: n.id,
         name: (n.data as any).name,
         type: (n.data as any).type,
         position: [Math.round(n.position.x), Math.round(n.position.y)],
         parameters: (n.data as any).parameters || {},
       })),
-      connections: edges.map((e) => ({
+      connections: latestEdges.map((e) => ({
         source: e.source,
         target: e.target,
       })),
@@ -467,9 +476,25 @@ export function App() {
         await refreshProjects();
       }
     } catch (err: any) {
-      alert(`Save error: ${err.message}`);
+      if (!silent) alert(`Save error: ${err.message}`);
     }
   };
+
+  // Auto-save node/edge edits (including apiKey, baseUrl, botToken, model) so refreshing never loses setup
+  useEffect(() => {
+    if (!currentWorkflow) return;
+    if (skipNextAutoSaveRef.current) {
+      skipNextAutoSaveRef.current = false;
+      return;
+    }
+    if (autoSaveTimerRef.current) window.clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = window.setTimeout(() => {
+      void handleSaveWorkflow(undefined, true);
+    }, 900);
+    return () => {
+      if (autoSaveTimerRef.current) window.clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [nodes, edges]);
 
   const handleExecuteWorkflow = async () => {
     if (!currentWorkflow || isRunning) return;
@@ -1108,7 +1133,10 @@ export function App() {
               onUpdateParameters={handleUpdateNodeParameters}
               onUpdateName={handleUpdateNodeName}
               onDeleteNode={handleDeleteNode}
-              onClose={() => setActiveNdvNodeId(null)}
+              onClose={() => {
+                setActiveNdvNodeId(null);
+                void handleSaveWorkflow(undefined, true);
+              }}
             />
           )}
 

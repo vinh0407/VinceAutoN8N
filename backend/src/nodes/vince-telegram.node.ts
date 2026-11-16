@@ -118,9 +118,10 @@ export class VinceTelegramNode implements INodeType {
 
       try {
         const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+        const safeText = String(message || '').length > 4000 ? String(message).slice(0, 3997) + '...' : String(message || '');
         const postData: any = {
           chat_id: chatId,
-          text: message,
+          text: safeText,
           parse_mode: node.parameters.parseMode === 'None' ? undefined : (node.parameters.parseMode || 'HTML'),
         };
         if (replyToMessageId) {
@@ -131,10 +132,10 @@ export class VinceTelegramNode implements INodeType {
         try {
           res = await axios.post(url, postData);
         } catch (sendErr: any) {
-          const desc = String(sendErr.response?.data?.description || '');
-          // If HTML entity parsing fails (e.g. AI reply contains <, >, &), retry as plain text
-          if (sendErr.response?.status === 400 && desc.toLowerCase().includes("can't parse entities") && postData.parse_mode) {
-            delete postData.parse_mode;
+          const desc = String(sendErr.response?.data?.description || '').toLowerCase();
+          if (sendErr.response?.status === 400 && (desc.includes("can't parse entities") || desc.includes('replied') || desc.includes('reply_to_message_id'))) {
+            if (desc.includes("can't parse entities")) delete postData.parse_mode;
+            if (desc.includes('replied') || desc.includes('reply_to_message_id')) delete postData.reply_to_message_id;
             res = await axios.post(url, postData);
           } else {
             throw sendErr;
