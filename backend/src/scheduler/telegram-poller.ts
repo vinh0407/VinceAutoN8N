@@ -259,8 +259,27 @@ export class TelegramPollingManager {
         });
         globalWorkflowStore.addExecution(summary);
         this.record(`[TelegramPoller] "${wf.name}" handled message from chat ${payload.chatId}: ${summary.status}${summary.error ? ' (' + summary.error + ')' : ''}`);
+        if (summary.status === 'error' && botToken && payload.chatId) {
+          const errText = summary.error || 'Lỗi không xác định khi chạy workflow';
+          await axios
+            .post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+              chat_id: payload.chatId,
+              text: `⚠️ Bot chưa thể trả lời do lỗi cấu hình/API:\n${errText}\n\n👉 Vui lòng mở VinceAuto kiểm tra lại API Key (nếu dùng Gemini hãy lấy key dạng AIza... hoặc tạo key mới trên Google AI Studio).`,
+              reply_to_message_id: payload.messageId,
+            })
+            .catch(() => undefined);
+        }
       } catch (err: any) {
         this.record(`[TelegramPoller] Workflow "${wf.name}" failed: ${err.message}`);
+        if (botToken && payload.chatId) {
+          await axios
+            .post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+              chat_id: payload.chatId,
+              text: `⚠️ Lỗi hệ thống khi xử lý tin nhắn: ${err.message}`,
+              reply_to_message_id: payload.messageId,
+            })
+            .catch(() => undefined);
+        }
       } finally {
         if (typingTimer) clearInterval(typingTimer);
       }
