@@ -289,15 +289,16 @@ export const AI_PROVIDERS_PRESETS = [
   {
     id: 'gemini',
     name: 'Google Gemini',
-    badge: 'Multimodal',
+    badge: 'AI Studio Free',
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
-    defaultModel: 'gemini-2.0-flash',
+    defaultModel: 'gemini-2.5-flash',
     models: [
-      { name: 'gemini-2.0-flash (Siêu tốc)', value: 'gemini-2.0-flash' },
-      { name: 'gemini-1.5-pro (Tư duy sâu)', value: 'gemini-1.5-pro' },
-      { name: 'gemini-1.5-flash', value: 'gemini-1.5-flash' },
+      { name: 'gemini-2.5-flash (Mới & Siêu tốc)', value: 'gemini-2.5-flash' },
+      { name: 'gemini-2.5-pro (Tư duy sâu)', value: 'gemini-2.5-pro' },
+      { name: 'gemini-2.0-flash (Nhanh & Ổn định)', value: 'gemini-2.0-flash' },
+      { name: 'gemini-1.5-pro', value: 'gemini-1.5-pro' },
     ],
-    placeholderKey: 'AIzaSy...',
+    placeholderKey: 'AIzaSy... (Lấy miễn phí tại aistudio.google.com)',
   },
   {
     id: 'claude',
@@ -1842,6 +1843,22 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                         <div className="text-[11px] text-zinc-400">
                           API Key này chỉ áp dụng riêng cho nút này, không ghi đè hay làm thay đổi API hệ thống chung.
                         </div>
+                        {parameters.provider === 'gemini' && (
+                          <div className="p-2.5 rounded-lg bg-[#1a2230] border border-[#2c405c] text-[11px] text-zinc-200 leading-relaxed">
+                            <strong>Lưu ý về Google Gemini Pro cá nhân:</strong> Google không hỗ trợ dùng gói web{' '}
+                            <code className="text-sky-300">gemini.google.com</code> bằng nút đăng nhập OAuth cho bot bên ngoài. Tuy nhiên, bạn có thể dùng{' '}
+                            <strong>chính Gmail cá nhân của mình</strong> vào{' '}
+                            <a
+                              href="https://aistudio.google.com/apikey"
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-sky-400 underline font-semibold"
+                            >
+                              Google AI Studio (aistudio.google.com/apikey) ↗
+                            </a>{' '}
+                            để bấm <strong>Create API key miễn phí (không cần thẻ)</strong> trong 10 giây rồi dán vào ô trên.
+                          </div>
+                        )}
                       </div>
 
                       {/* 4. Model Selection & Custom Model Input */}
