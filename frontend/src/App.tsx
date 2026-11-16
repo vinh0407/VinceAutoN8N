@@ -1157,11 +1157,43 @@ export function App() {
             <AIWorkflowAssistant
               currentWorkflow={currentWorkflow}
               onApplyWorkflow={async (wf) => {
+                const enrichWorkflowFromCsv = (wfInput: IWorkflow): IWorkflow => {
+                  try {
+                    const rawCsv = localStorage.getItem('vinceauto:csv_ai_providers');
+                    const csvList: any[] = rawCsv ? JSON.parse(rawCsv) : [];
+                    if (!Array.isArray(csvList) || csvList.length === 0) return wfInput;
+                    return {
+                      ...wfInput,
+                      nodes: (wfInput.nodes || []).map((n) => {
+                        const isAi = n.type === 'vince.modelRouter' || n.type === 'vince.agentManager' || n.type.startsWith('ai.');
+                        if (!isAi) return n;
+                        const matched = csvList.find((p) => p.baseUrl === n.parameters?.baseUrl) || csvList[0];
+                        return {
+                          ...n,
+                          parameters: {
+                            ...n.parameters,
+                            ...(matched?.apiKey && !n.parameters?.apiKey ? { apiKey: matched.apiKey } : {}),
+                            ...(matched?.baseUrl && !n.parameters?.baseUrl ? { baseUrl: matched.baseUrl } : {}),
+                            ...(matched?.defaultModel && !n.parameters?.model ? { model: matched.defaultModel } : {}),
+                            fallbackProviders: csvList.map((p) => ({
+                              name: p.name,
+                              baseUrl: p.baseUrl,
+                              apiKey: p.apiKey || '',
+                              defaultModel: p.defaultModel,
+                            })),
+                          },
+                        };
+                      }),
+                    };
+                  } catch {
+                    return wfInput;
+                  }
+                };
                 const targetProjId = selectedProjectId || projects[0]?.id || 'proj_ai';
-                const wfWithProj: IWorkflow = {
+                const wfWithProj: IWorkflow = enrichWorkflowFromCsv({
                   ...wf,
                   projectId: targetProjId,
-                };
+                });
                 loadWorkflow(wfWithProj);
                 try {
                   const res = await axios.post('/api/workflows', wfWithProj);

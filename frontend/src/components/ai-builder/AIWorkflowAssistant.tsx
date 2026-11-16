@@ -100,8 +100,17 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
     }
   }, [selectedAgentLog]);
 
-  const executePrompt = async (promptToRun: string, autoApply = false) => {
+  const executePrompt = async (
+    promptToRun: string,
+    autoApply = false,
+    presetOverride?: { baseUrl?: string; model?: string }
+  ) => {
     if (!promptToRun.trim() || isLoading) return;
+
+    const effectiveBaseUrl = presetOverride?.baseUrl || customBaseUrl;
+    const effectiveModel = presetOverride?.model || selectedModel;
+    if (presetOverride?.baseUrl) setCustomBaseUrl(presetOverride.baseUrl);
+    if (presetOverride?.model) setSelectedModel(presetOverride.model);
 
     setPrompt(promptToRun);
     setActiveTab('chat');
@@ -114,9 +123,9 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
       const res = await axios.post('/api/ai/build', {
         prompt: promptToRun,
         existingWorkflow: currentWorkflow || { id: 'wf_draft', name: 'Bản vẽ mới', nodes: [], connections: [] },
-        provider: 'opencode2',
-        baseUrl: customBaseUrl,
-        model: selectedModel,
+        provider: 'openai',
+        baseUrl: effectiveBaseUrl,
+        model: effectiveModel,
       });
 
       if (res.data?.success && res.data?.plan) {
@@ -614,7 +623,12 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
                       </div>
                       <button
                         type="button"
-                        onClick={() => executePrompt(item.prompt, true)}
+                        onClick={() =>
+                          executePrompt(item.prompt, true, {
+                            baseUrl: item.recommendedBaseUrl,
+                            model: item.recommendedModel,
+                          })
+                        }
                         className="shrink-0 px-2.5 py-1.5 rounded-lg bg-[#e6e8ec] hover:bg-white text-zinc-900 font-bold text-[10.5px] flex items-center space-x-1 shadow cursor-pointer"
                         title="Tạo và áp dụng ngay workflow này lên bản vẽ"
                       >
@@ -622,6 +636,16 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
                         <span>Tạo Tự Động</span>
                       </button>
                     </div>
+
+                    {item.recommendedModel && (
+                      <div className="text-[10.5px] px-2 py-1 rounded bg-emerald-950/50 border border-emerald-500/30 text-emerald-300 flex flex-wrap items-center gap-1.5">
+                        <span className="font-semibold">Model gợi ý:</span>
+                        <code className="font-mono text-emerald-200">{item.recommendedModel}</code>
+                        {item.recommendationReason && (
+                          <span className="text-zinc-300">— {item.recommendationReason}</span>
+                        )}
+                      </div>
+                    )}
 
                     <div className="flex flex-wrap gap-1">
                       {item.nodeNames.map((nodeName, i) => (

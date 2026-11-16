@@ -601,7 +601,7 @@ const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
     nodes: [
       { id: 'tg1', name: 'Telegram Trigger', type: 'trigger.appEvent', position: [80, 240], parameters: { app: 'telegram', updates: ['Message'] } },
       { id: 'tg2', name: 'Edit Fields (Set)', type: 'transform.editFields', position: [380, 240], parameters: { mode: 'manual', fields: { userQuery: '{{ $json.text || $json.message.text }}', chatId: '{{ $json.chatId || $json.message.chat.id }}' }, keepOnlySet: false } },
-      { id: 'tg3', name: 'AI Agent', type: 'vince.modelRouter', position: [680, 240], parameters: { provider: 'opencode2', baseUrl: 'https://opencode.ai/zen/v1', model: 'crouton-alpha-free', prompt: '{{ $json.userQuery || $json.text || $json.message.text }}', systemPrompt: 'Bạn là trợ lý ảo AI thông minh trên Telegram. Hãy trả lời câu hỏi của người dùng một cách chính xác, khách quan, lịch sự và hữu ích.' } },
+      { id: 'tg3', name: 'AI Agent (kilo-auto/free)', type: 'vince.modelRouter', position: [680, 240], parameters: { provider: 'kilo', baseUrl: 'https://ai-gateway.kilo.ai/api/v1', model: 'kilo-auto/free', prompt: '{{ $json.userQuery || $json.text || $json.message.text }}', systemPrompt: 'Bạn là trợ lý ảo AI thông minh trên Telegram. Hãy trả lời câu hỏi của người dùng một cách chính xác, khách quan, lịch sự và hữu ích.' } },
       { id: 'tg4', name: 'Telegram: Send Message', type: 'vince.telegram', position: [980, 240], parameters: { resource: 'message', operation: 'sendMessage', chatId: '{{ $json.chatId || $json.message.chat.id }}', message: '{{ $json.aiResponse || $json.text }}', parseMode: 'HTML' } },
     ],
     connections: [
@@ -632,7 +632,7 @@ const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
     nodes: [
       { id: 'zl1', name: 'Zalo OA Trigger', type: 'trigger.chat', position: [80, 240], parameters: { channel: 'zalo', welcomeMessage: 'Xin chào! Trợ lý AI Zalo OA sẵn sàng hỗ trợ.' } },
       { id: 'zl2', name: 'Edit Fields (Set)', type: 'transform.editFields', position: [380, 240], parameters: { mode: 'manual', fields: { userQuery: '{{ $json.text || $json.message.text }}', phone: '{{ $json.phone || "" }}' }, keepOnlySet: false } },
-      { id: 'zl3', name: 'AI Agent', type: 'vince.modelRouter', position: [680, 240], parameters: { provider: 'opencode2', baseUrl: 'https://opencode.ai/zen/v1', model: 'crouton-alpha-free', prompt: '{{ $json.userQuery || $json.text }}', systemPrompt: 'Bạn là trợ lý ảo CSKH trên Zalo OA. Hãy trả lời ngắn gọn, lịch sự, chính xác và khách quan.' } },
+      { id: 'zl3', name: 'AI Agent (Llama 3.2 3B)', type: 'vince.modelRouter', position: [680, 240], parameters: { provider: 'cloudflare', baseUrl: 'https://api.cloudflare.com/client/v4/accounts/e155cf04b558472645b9444756a0deed/ai/v1', model: '@cf/meta/llama-3.2-3b-instruct', prompt: '{{ $json.userQuery || $json.text }}', systemPrompt: 'Bạn là trợ lý ảo CSKH trên Zalo OA. Hãy trả lời ngắn gọn, lịch sự, chính xác và khách quan.' } },
       { id: 'zl4', name: 'Zalo OA: Send Message / ZNS', type: 'vince.zalo.sendZns', position: [980, 240], parameters: { resource: 'Zalo Message', operation: 'sendText', phone: '{{ $json.phone || "" }}', message: '{{ $json.aiResponse || $json.text }}' } },
     ],
     connections: [
@@ -665,7 +665,7 @@ const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
     nodes: [
       { id: 'sb1', name: 'Social Media Trigger', type: 'trigger.socialMedia', position: [80, 240], parameters: { app: 'messenger_ig_threads_tiktok', event: 'message_or_comment' } },
       { id: 'sb2', name: 'Filter: Lọc tin nhắn hợp lệ', type: 'transform.filter', position: [380, 240], parameters: { condition: '$json.text && $json.text.length > 1' } },
-      { id: 'sb3', name: 'AI Agent', type: 'vince.modelRouter', position: [680, 240], parameters: { provider: 'opencode2', baseUrl: 'https://opencode.ai/zen/v1', model: 'crouton-alpha-free', prompt: '{{ $json.text || $json.message.text }}', systemPrompt: 'Bạn là trợ lý ảo trả lời bình luận và tin nhắn DM trên mạng xã hội một cách thân thiện, tự nhiên và hữu ích.' } },
+      { id: 'sb3', name: 'AI Agent (kilo-auto/free)', type: 'vince.modelRouter', position: [680, 240], parameters: { provider: 'kilo', baseUrl: 'https://ai-gateway.kilo.ai/api/v1', model: 'kilo-auto/free', prompt: '{{ $json.text || $json.message.text }}', systemPrompt: 'Bạn là trợ lý ảo trả lời bình luận và tin nhắn DM trên mạng xã hội một cách thân thiện, tự nhiên và hữu ích.' } },
       { id: 'sb4', name: 'Messenger / Facebook: Reply', type: 'vince.facebook.postFeed', position: [1000, 100], parameters: { resource: 'Messenger', operation: 'sendMessage' } },
       { id: 'sb5', name: 'Instagram & Threads: Reply', type: 'vince.threads.action', position: [1000, 240], parameters: { resource: 'Reply', operation: 'createReply' } },
       { id: 'sb6', name: 'TikTok: Reply Comment', type: 'vince.tiktok.action', position: [1000, 380], parameters: { resource: 'Comment', operation: 'reply' } },

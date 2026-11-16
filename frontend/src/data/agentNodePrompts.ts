@@ -481,6 +481,10 @@ export interface IPrebuiltWorkflowPrompt {
   nodesCount: number;
   nodeNames: string[];
   prompt: string;
+  recommendedProvider?: string;
+  recommendedBaseUrl?: string;
+  recommendedModel?: string;
+  recommendationReason?: string;
 }
 
 /**
@@ -509,10 +513,14 @@ export const PREBUILT_AGENT_WORKFLOW_PROMPTS: IPrebuiltWorkflowPrompt[] = [
     title: '0A. Chatbot AI Telegram của Ưng Đỗ Thế Vinh (Ai nhắn tin tới Bot cũng tự động trả lời)',
     category: 'Chatbot AI • Telegram (@ungdothevinh)',
     nodesCount: 4,
+    recommendedProvider: 'kilo',
+    recommendedBaseUrl: 'https://ai-gateway.kilo.ai/api/v1',
+    recommendedModel: 'kilo-auto/free',
+    recommendationReason: 'Nhanh (~1.1s) & cân bằng độ chính xác cho hội thoại Chatbot 2 chiều',
     nodeNames: [
       'Telegram Trigger (Message)',
       'Edit Fields (Chuẩn hóa Câu hỏi & Chat ID)',
-      'AI Agent (Tùy chọn API / Model)',
+      'AI Agent (kilo-auto/free)',
       'Telegram: Send Message (Reply người gửi)',
     ],
     prompt:
@@ -523,10 +531,14 @@ export const PREBUILT_AGENT_WORKFLOW_PROMPTS: IPrebuiltWorkflowPrompt[] = [
     title: '0B. Chatbot AI Zalo OA của Ưng Đỗ Thế Vinh (Tự động tư vấn & phản hồi khách hàng)',
     category: 'Chatbot AI • Zalo OA (Vinh)',
     nodesCount: 4,
+    recommendedProvider: 'cloudflare',
+    recommendedBaseUrl: 'https://api.cloudflare.com/client/v4/accounts/e155cf04b558472645b9444756a0deed/ai/v1',
+    recommendedModel: '@cf/meta/llama-3.2-3b-instruct',
+    recommendationReason: 'Phản hồi siêu tốc (<1s–2s) & ổn định cho CSKH Zalo OA',
     nodeNames: [
       'Chat / Zalo Trigger (Tin nhắn mới)',
       'Edit Fields (Chuẩn hóa SĐT & Nội dung)',
-      'AI Agent (Tùy chọn API / Model)',
+      'AI Agent (@cf/meta/llama-3.2-3b-instruct)',
       'Zalo OA: Send Message / ZNS',
     ],
     prompt:
@@ -537,10 +549,14 @@ export const PREBUILT_AGENT_WORKFLOW_PROMPTS: IPrebuiltWorkflowPrompt[] = [
     title: '0C. Chatbot AI Mạng xã hội của Ưng Đỗ Thế Vinh (Messenger / Instagram / Threads / TikTok)',
     category: 'Chatbot AI • Messenger / Threads / TikTok / IG',
     nodesCount: 5,
+    recommendedProvider: 'kilo',
+    recommendedBaseUrl: 'https://ai-gateway.kilo.ai/api/v1',
+    recommendedModel: 'kilo-auto/free',
+    recommendationReason: 'Nhanh & linh hoạt cho trả lời bình luận và tin nhắn DM đa nền tảng',
     nodeNames: [
       'Social Media Trigger (Messenger / IG / Threads / TikTok)',
       'Filter (Lọc bình luận & tin nhắn hợp lệ)',
-      'AI Agent (Soạn câu trả lời thông minh)',
+      'AI Agent (kilo-auto/free)',
       'Messenger / Instagram / Threads / TikTok: Reply',
     ],
     prompt:
@@ -551,11 +567,15 @@ export const PREBUILT_AGENT_WORKFLOW_PROMPTS: IPrebuiltWorkflowPrompt[] = [
     title: '1. Tự động xử lý Đơn hàng Shopee / TikTok Shop + Zalo ZNS + Google Sheets',
     category: 'TMĐT & Bán lẻ',
     nodesCount: 6,
+    recommendedProvider: 'cloudflare',
+    recommendedBaseUrl: 'https://api.cloudflare.com/client/v4/accounts/e155cf04b558472645b9444756a0deed/ai/v1',
+    recommendedModel: '@cf/meta/llama-3.1-8b-instruct-fp8-fast',
+    recommendationReason: 'Xử lý nhanh đơn hàng số lượng lớn & phân loại ghi chú chính xác',
     nodeNames: [
       'E-commerce Trigger [T/W]',
       'Shopee: Get Order Detail',
       'Filter (Lọc đơn hợp lệ)',
-      'AI Agent (Phân tích đơn hàng)',
+      'AI Agent (@cf/meta/llama-3.1-8b-instruct-fp8-fast)',
       'Google Sheets: Append Row',
       'Zalo OA: Send ZNS + Telegram',
     ],
@@ -567,10 +587,14 @@ export const PREBUILT_AGENT_WORKFLOW_PROMPTS: IPrebuiltWorkflowPrompt[] = [
     title: '2. AI Agent CSKH Đa kênh (Telegram / Zalo / Webchat) + Lưu CRM',
     category: 'CSKH & Hội thoại AI',
     nodesCount: 5,
+    recommendedProvider: 'kilo',
+    recommendedBaseUrl: 'https://ai-gateway.kilo.ai/api/v1',
+    recommendedModel: 'kilo-auto/free',
+    recommendationReason: 'Phản hồi tự nhiên & phân loại nhu cầu khách hàng chuẩn xác',
     nodeNames: [
       'Chat Trigger [T/W]',
       'Edit Fields (Set)',
-      'AI Agent (Tư vấn khách hàng)',
+      'AI Agent (kilo-auto/free)',
       'CRM HubSpot: Upsert Contact',
       'Telegram: Send Message',
     ],
@@ -582,10 +606,14 @@ export const PREBUILT_AGENT_WORKFLOW_PROMPTS: IPrebuiltWorkflowPrompt[] = [
     title: '3. Tự động Đối soát Thanh toán VietQR / MoMo + Xuất Hóa đơn Gmail & Sheets',
     category: 'Tài chính & Thanh toán',
     nodesCount: 5,
+    recommendedProvider: 'kilo',
+    recommendedBaseUrl: 'https://ai-gateway.kilo.ai/api/v1',
+    recommendedModel: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+    recommendationReason: 'Model Reasoning suy luận đối soát mã giao dịch & số tiền chính xác',
     nodeNames: [
       'Payment Webhook Trigger [T/W]',
       'Edit Fields (Set)',
-      'AI Agent (Đối soát giao dịch)',
+      'AI Agent (nemotron-3-nano-omni-30b-reasoning)',
       'Google Sheets: Append or Update Row',
       'Gmail: Send Email + Telegram',
     ],
@@ -597,11 +625,15 @@ export const PREBUILT_AGENT_WORKFLOW_PROMPTS: IPrebuiltWorkflowPrompt[] = [
     title: '4. Cào Tin tức mỗi sáng + AI Tóm tắt + Lưu Notion & Google Sheets',
     category: 'Nghiên cứu & Nội dung',
     nodesCount: 6,
+    recommendedProvider: 'openrouter',
+    recommendedBaseUrl: 'https://openrouter.ai/api/v1',
+    recommendedModel: 'google/gemma-4-26b-a4b-it:free',
+    recommendationReason: 'Tóm tắt văn bản dài & biên tập tiếng Việt mượt mà',
     nodeNames: [
       'Schedule Trigger (8:00 AM)',
       'Vince Web Scraper',
       'Remove Duplicates',
-      'AI Agent (Tóm tắt chuyên sâu)',
+      'AI Agent (google/gemma-4-26b-a4b-it:free)',
       'Notion: Create Page',
       'Telegram: Send Message',
     ],
@@ -613,10 +645,14 @@ export const PREBUILT_AGENT_WORKFLOW_PROMPTS: IPrebuiltWorkflowPrompt[] = [
     title: '5. Thu thập Lead từ Biểu mẫu + Chấm điểm AI + Đồng bộ Microsoft 365 & Calendar',
     category: 'Google & Microsoft 365',
     nodesCount: 6,
+    recommendedProvider: 'kilo',
+    recommendedBaseUrl: 'https://ai-gateway.kilo.ai/api/v1',
+    recommendedModel: 'kilo-auto/free',
+    recommendationReason: 'Chấm điểm & phân tích hồ sơ Lead chính xác',
     nodeNames: [
       'Form Trigger [T/W]',
       'Edit Fields (Set)',
-      'AI Agent (Chấm điểm Lead)',
+      'AI Agent (kilo-auto/free)',
       'Google Calendar: Create Event',
       'Microsoft 365 (Excel & Teams)',
       'Gmail: Send Email',
@@ -629,10 +665,14 @@ export const PREBUILT_AGENT_WORKFLOW_PROMPTS: IPrebuiltWorkflowPrompt[] = [
     title: '6. Giám sát Database PostgreSQL / Supabase + AI Phân tích + Cảnh báo Slack & Discord',
     category: 'Database & DevOps',
     nodesCount: 5,
+    recommendedProvider: 'kilo',
+    recommendedBaseUrl: 'https://ai-gateway.kilo.ai/api/v1',
+    recommendedModel: 'cohere/north-mini-code:free',
+    recommendationReason: 'Chuyên phân tích log kỹ thuật, SQL & cảnh báo bất thường',
     nodeNames: [
       'Database Trigger [T/P]',
       'Filter',
-      'AI Agent (Phân tích bất thường)',
+      'AI Agent (cohere/north-mini-code:free)',
       'Database: Execute Query',
       'Slack + Discord + Telegram',
     ],

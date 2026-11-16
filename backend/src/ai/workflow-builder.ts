@@ -873,10 +873,19 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
     existingWorkflow?: IWorkflow,
     opts?: { provider: string; baseUrl: string; model: string; apiKey?: string }
   ): IAIBuildPlan {
-    const activeProvider = opts?.provider || DEFAULT_OPENCODE2_PROVIDER.providerName;
-    const activeBaseUrl = opts?.baseUrl || DEFAULT_OPENCODE2_PROVIDER.baseUrl;
-    const activeModel = opts?.model || DEFAULT_OPENCODE2_PROVIDER.defaultModel;
     const p = prompt.toLowerCase();
+    const isDefaultDeprecated = !opts?.model || opts.model === 'crouton-alpha-free';
+    const isFinanceOrReason = p.includes('đối soát') || p.includes('thanh toán') || p.includes('momo') || p.includes('vietqr') || p.includes('phân tích');
+    const isCodeOrDb = p.includes('database') || p.includes('sql') || p.includes('postgres') || p.includes('devops') || p.includes('code');
+    const activeProvider = isDefaultDeprecated ? 'kilo' : (opts?.provider || 'kilo');
+    const activeBaseUrl = isDefaultDeprecated ? 'https://ai-gateway.kilo.ai/api/v1' : (opts?.baseUrl || 'https://ai-gateway.kilo.ai/api/v1');
+    const activeModel = isDefaultDeprecated
+      ? isCodeOrDb
+        ? 'cohere/north-mini-code:free'
+        : isFinanceOrReason
+        ? 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'
+        : 'kilo-auto/free'
+      : opts!.model;
     const nodes: INode[] = [];
     const connections: IConnection[] = [];
     const steps: string[] = [];
