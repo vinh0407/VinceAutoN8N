@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import axios from 'axios';
 import { globalWorkflowStore } from './store.js';
 
@@ -71,6 +72,41 @@ class CloudBackup {
     };
   }
 
+  private deriveKey(): Buffer {
+    const secret = (process.env.BACKUP_ENCRYPTION_KEY || this.token || 'vinceauto-default-secret').trim();
+    return crypto.createHash('sha256').update(secret).digest();
+  }
+
+  private encryptContent(plainText: string): string {
+    const key = this.deriveKey();
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+    const encrypted = Buffer.concat([cipher.update(plainText, 'utf8'), cipher.final()]);
+    const tag = cipher.getAuthTag();
+    return JSON.stringify({
+      v: 1,
+      alg: 'aes-256-gcm',
+      iv: iv.toString('base64'),
+      tag: tag.toString('base64'),
+      data: encrypted.toString('base64'),
+    });
+  }
+
+  private decryptContent(raw: string): string {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.v === 1 && parsed.alg === 'aes-256-gcm') {
+      const key = this.deriveKey();
+      const iv = Buffer.from(parsed.iv, 'base64');
+      const tag = Buffer.from(parsed.tag, 'base64');
+      const data = Buffer.from(parsed.data, 'base64');
+      const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+      decipher.setAuthTag(tag);
+      const decrypted = Buffer.concat([decipher.update(data), decipher.final()]);
+      return decrypted.toString('utf8');
+    }
+    return raw;
+  }
+
   private dataPath(file: string) {
     return path.join(globalWorkflowStore.getDataDir(), file);
   }
@@ -88,11 +124,12 @@ class CloudBackup {
       }
       if (list.length < 100) break;
     }
-    // Create a new private gist
+    // Create a new private gist (always encrypted so secrets are never exposed)
     const files: Record<string, { content: string }> = {};
     for (const f of FILES) {
       const p = this.dataPath(f);
-      files[f] = { content: fs.existsSync(p) ? fs.readFileSync(p, 'utf-8') || '[]' : f === 'credentials.json' ? '{}' : '[]' };
+      const plain = fs.existsSync(p) ? fs.readFileSync(p, 'utf-8') || '[]' : f === 'credentials.json' ? '{}' : '[]';
+      files[f] = { content: this.encryptContent(plain) };
     }
     const created = await axios.post(`${API}/gists`, { description: DESCRIPTION, public: false, files }, { headers: this.headers() });
     this.gistId = created.data.id;
@@ -121,13 +158,15 @@ class CloudBackup {
           content = raw.data;
         }
         if (typeof content !== 'string' || !content.trim()) continue;
+        let plainContent: string;
         try {
-          JSON.parse(content);
+          plainContent = this.decryptContent(content);
+          JSON.parse(plainContent);
         } catch {
           continue; // never overwrite with corrupt data
         }
-        fs.writeFileSync(this.dataPath(f), content);
-        this.lastPushed[f] = content;
+        fs.writeFileSync(this.dataPath(f), plainContent);
+        this.lastPushed[f] = plainContent;
         restored++;
       }
       globalWorkflowStore.reload();
@@ -137,24 +176,28 @@ class CloudBackup {
     }
   }
 
-  /** Push changed files to the gist. */
+  /** Push changed files to the gist (AES-256-GCM encrypted). */
   async push() {
     if (!this.enabled || this.pushing) return;
     this.pushing = true;
     try {
       const changed: Record<string, { content: string }> = {};
+      const plainChanged: Record<string, string> = {};
       for (const f of FILES) {
         const p = this.dataPath(f);
         if (!fs.existsSync(p)) continue;
         const content = fs.readFileSync(p, 'utf-8');
-        if (content && content !== this.lastPushed[f]) changed[f] = { content };
+        if (content && content !== this.lastPushed[f]) {
+          changed[f] = { content: this.encryptContent(content) };
+          plainChanged[f] = content;
+        }
       }
       if (Object.keys(changed).length === 0) return;
       const id = await this.ensureGist();
       if (!id) return;
       await axios.patch(`${API}/gists/${id}`, { files: changed }, { headers: this.headers() });
-      for (const [f, v] of Object.entries(changed)) this.lastPushed[f] = v.content;
-      console.log(`[CloudBackup] Synced ${Object.keys(changed).join(', ')}`);
+      for (const [f, plain] of Object.entries(plainChanged)) this.lastPushed[f] = plain;
+      console.log(`[CloudBackup] Synced encrypted backup (${Object.keys(changed).join(', ')})`);
     } catch (err: any) {
       console.error(`[CloudBackup] Push failed: ${err.response?.data?.message || err.message}`);
     } finally {
