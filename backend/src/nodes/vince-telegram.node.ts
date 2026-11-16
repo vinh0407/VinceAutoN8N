@@ -127,7 +127,19 @@ export class VinceTelegramNode implements INodeType {
           postData.reply_to_message_id = replyToMessageId;
         }
 
-        const res = await axios.post(url, postData);
+        let res;
+        try {
+          res = await axios.post(url, postData);
+        } catch (sendErr: any) {
+          const desc = String(sendErr.response?.data?.description || '');
+          // If HTML entity parsing fails (e.g. AI reply contains <, >, &), retry as plain text
+          if (sendErr.response?.status === 400 && desc.toLowerCase().includes("can't parse entities") && postData.parse_mode) {
+            delete postData.parse_mode;
+            res = await axios.post(url, postData);
+          } else {
+            throw sendErr;
+          }
+        }
 
         results.push({
           json: {
