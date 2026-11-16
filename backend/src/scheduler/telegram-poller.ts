@@ -234,6 +234,22 @@ export class TelegramPollingManager {
       const wf = globalWorkflowStore.getWorkflow(wfId);
       if (!wf || !wf.active) continue;
       const trigger = wf.nodes.find((n) => isTelegramTrigger(n, wf));
+      const botToken = trigger ? resolveBotToken(wf, trigger) : '';
+
+      // Show "typing..." in Telegram while AI Agent is thinking on long/hard questions
+      let typingTimer: NodeJS.Timeout | undefined;
+      if (botToken && payload.chatId) {
+        const sendTyping = () =>
+          axios
+            .post(`https://api.telegram.org/bot${botToken}/sendChatAction`, {
+              chat_id: payload.chatId,
+              action: 'typing',
+            })
+            .catch(() => undefined);
+        void sendTyping();
+        typingTimer = setInterval(() => void sendTyping(), 4500);
+      }
+
       try {
         const summary = await WorkflowRunner.execute(wf, {
           executionMode: 'trigger',
@@ -245,6 +261,8 @@ export class TelegramPollingManager {
         this.record(`[TelegramPoller] "${wf.name}" handled message from chat ${payload.chatId}: ${summary.status}${summary.error ? ' (' + summary.error + ')' : ''}`);
       } catch (err: any) {
         this.record(`[TelegramPoller] Workflow "${wf.name}" failed: ${err.message}`);
+      } finally {
+        if (typingTimer) clearInterval(typingTimer);
       }
     }
   }

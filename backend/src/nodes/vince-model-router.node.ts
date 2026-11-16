@@ -153,6 +153,7 @@ export class VinceModelRouterNode implements INodeType {
       try {
         response = await globalAIRouter.routeAndExecute(messages, strategy, explicitProvider, {
           temperature: Number(node.parameters.temperature ?? 0.7),
+          maxTokens: Number(node.parameters.maxTokens ?? 1500),
           baseUrl,
           model: selectedModel,
           apiKey,
