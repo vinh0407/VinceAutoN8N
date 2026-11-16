@@ -230,6 +230,10 @@ export class TelegramPollingManager {
       replyToMessageId: msg.message_id,
     };
 
+    if (await this.tryHandleControlCommand(state.token, payload)) {
+      return;
+    }
+
     for (const wfId of state.workflowIds) {
       const wf = globalWorkflowStore.getWorkflow(wfId);
       if (!wf || !wf.active) continue;
@@ -284,6 +288,128 @@ export class TelegramPollingManager {
         if (typingTimer) clearInterval(typingTimer);
       }
     }
+  }
+
+  private async tryHandleControlCommand(botToken: string, payload: Record<string, any>): Promise<boolean> {
+    const raw = String(payload.text || '').trim();
+    if (!raw.startsWith('/')) return false;
+
+    const match = raw.match(/^\/([a-zA-Z0-9_]+)(?:\s+([\s\S]+))?$/);
+    if (!match) return false;
+    const cmd = match[1].toLowerCase();
+    const arg = (match[2] || '').trim();
+
+    const controlCmds = new Set(['help', 'lenh', 'workflows', 'list', 'danhsach', 'status', 'trangthai', 'run', 'chay', 'on', 'bat', 'off', 'tat']);
+    if (!controlCmds.has(cmd)) return false;
+
+    const reply = async (text: string) => {
+      if (!botToken || !payload.chatId) return;
+      await axios
+        .post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          chat_id: payload.chatId,
+          text,
+          reply_to_message_id: payload.messageId,
+        })
+        .catch(() => undefined);
+    };
+
+    const extraAdmins = (process.env.TELEGRAM_ADMIN_IDS || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const isOwner =
+      String(payload.userId) === '1869249751' ||
+      String(payload.chatId) === '1869249751' ||
+      String(payload.username || '').toLowerCase() === 'ungvinh0407' ||
+      extraAdmins.includes(String(payload.userId));
+
+    if (!isOwner) {
+      await reply('🔒 Chỉ chủ sở hữu (@ungvinh0407) mới có quyền điều khiển workflow.');
+      return true;
+    }
+
+    const workflows = globalWorkflowStore.getWorkflows();
+
+    if (cmd === 'help' || cmd === 'lenh') {
+      await reply(
+        [
+          '🤖 ĐIỀU KHIỂN VINCEAUTO QUA TELEGRAM:',
+          '• /workflows — Xem danh sách tất cả workflow',
+          '• /run <số hoặc tên> — Chạy ngay workflow (VD: /run 2)',
+          '• /on <số hoặc tên> — Bật (Publish) workflow',
+          '• /off <số hoặc tên> — Tạm tắt workflow',
+          '• /status — Xem trạng thái hệ thống & lịch sử chạy',
+        ].join('\n')
+      );
+      return true;
+    }
+
+    if (cmd === 'workflows' || cmd === 'list' || cmd === 'danhsach') {
+      if (workflows.length === 0) {
+        await reply('📭 Hiện chưa có workflow nào trong VinceAuto.');
+        return true;
+      }
+      const lines = workflows.map((w, i) => `${i + 1}. ${w.active ? '🟢' : '⚪'} ${w.name} (${w.nodes?.length || 0} nodes)`);
+      await reply(`📋 Danh sách Workflow (${workflows.length}):\n\n${lines.join('\n')}\n\n👉 Gửi /run <số> để chạy, /on <số> hoặc /off <số> để bật/tắt.`);
+      return true;
+    }
+
+    if (cmd === 'status' || cmd === 'trangthai') {
+      const activeCount = workflows.filter((w) => w.active).length;
+      const recent = globalWorkflowStore.getExecutions(undefined, 3);
+      const recentLines =
+        recent.length > 0
+          ? recent.map((e) => `• ${e.status === 'success' ? '✅' : '❌'} ${e.workflowName} (${e.durationMs}ms)`).join('\n')
+          : '• Chưa có lượt chạy nào gần đây.';
+      await reply(`📊 Trạng thái VinceAuto:\n• Tổng workflow: ${workflows.length} (🟢 Đang bật: ${activeCount})\n\n🕒 Lượt chạy gần nhất:\n${recentLines}`);
+      return true;
+    }
+
+    const resolveTarget = (): IWorkflow | undefined => {
+      if (!arg) return undefined;
+      const num = Number(arg);
+      if (Number.isInteger(num) && num >= 1 && num <= workflows.length) {
+        return workflows[num - 1];
+      }
+      const q = arg.toLowerCase();
+      return workflows.find((w) => w.id.toLowerCase() === q || w.name.toLowerCase().includes(q));
+    };
+
+    const target = resolveTarget();
+    if (!target) {
+      await reply(`⚠️ Không tìm thấy workflow "${arg}". Gửi /workflows để xem số thứ tự.`);
+      return true;
+    }
+
+    if (cmd === 'on' || cmd === 'bat' || cmd === 'off' || cmd === 'tat') {
+      const nextActive = cmd === 'on' || cmd === 'bat';
+      globalWorkflowStore.saveWorkflow({ ...target, active: nextActive, updatedAt: new Date().toISOString() });
+      this.sync(globalWorkflowStore.getWorkflows());
+      await reply(`${nextActive ? '🟢 Đã BẬT' : '⚪ Đã TẮT'} workflow: "${target.name}".`);
+      return true;
+    }
+
+    if (cmd === 'run' || cmd === 'chay') {
+      await reply(`🚀 Đang chạy workflow: "${target.name}"...`);
+      try {
+        const summary = await WorkflowRunner.execute(target, {
+          executionMode: 'manual',
+          initialData: [{ json: { ...payload, triggeredBy: 'telegram_command' } }],
+          credentials: globalWorkflowStore.getCredentials(),
+        });
+        globalWorkflowStore.addExecution(summary);
+        if (summary.status === 'success') {
+          await reply(`✅ Hoàn tất "${target.name}" trong ${summary.durationMs}ms!`);
+        } else {
+          await reply(`❌ Workflow "${target.name}" gặp lỗi:\n${summary.error || 'Lỗi không xác định'}`);
+        }
+      } catch (err: any) {
+        await reply(`❌ Lỗi khi chạy "${target.name}": ${err.message}`);
+      }
+      return true;
+    }
+
+    return false;
   }
 }
 
