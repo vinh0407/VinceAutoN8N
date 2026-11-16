@@ -230,7 +230,21 @@ export class TelegramPollingManager {
       replyToMessageId: msg.message_id,
     };
 
-    if (await this.tryHandleControlCommand(state.token, payload)) {
+    let effectiveBotToken = state.token && state.token !== 'webhook' ? state.token : '';
+    if (!effectiveBotToken) {
+      for (const wfId of state.workflowIds) {
+        const wf = globalWorkflowStore.getWorkflow(wfId);
+        if (!wf || !wf.active) continue;
+        const trigger = wf.nodes.find((n) => isTelegramTrigger(n, wf));
+        const tok = trigger ? resolveBotToken(wf, trigger) : '';
+        if (tok) {
+          effectiveBotToken = tok;
+          break;
+        }
+      }
+    }
+
+    if (await this.tryHandleControlCommand(effectiveBotToken, payload)) {
       return;
     }
 
