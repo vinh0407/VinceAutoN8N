@@ -20,18 +20,18 @@ export class VinceTelegramNode implements INodeType {
       },
       {
         name: 'chatId',
-        displayName: 'Chat ID (@chatid hoặc ID số)',
+        displayName: 'Chat ID (@username hoặc ID số - Ai nhắn thì bot reply người đó)',
         type: 'string' as const,
-        default: '@ungdothevinh',
-        placeholder: '@ungdothevinh hoặc 118229444',
+        default: '{{ $json.chatId || $json.message.chat.id }}',
+        placeholder: '{{ $json.chatId }} hoặc ID số người nhận',
         required: true,
       },
       {
         name: 'message',
-        displayName: 'Nội Dung Tin Nhắn (Text Message)',
+        displayName: 'Nội Dung Tin Nhắn Phản Hồi (Text Message)',
         type: 'string' as const,
-        default: '⚡ [VinceAuto - Ưng Đỗ Thế Vinh]\nWorkflow hoàn thành thành công!\nKết quả: {{ JSON.stringify($json) }}',
-        placeholder: 'Kéo thả {{ $json.message.text }} từ cột INPUT vào đây...',
+        default: '{{ $json.aiResponse || $json.text }}',
+        placeholder: '{{ $json.aiResponse }} hoặc nhập tin nhắn...',
         required: true,
       },
       {
@@ -69,39 +69,38 @@ export class VinceTelegramNode implements INodeType {
       const item = items[i];
       let chatId = ExpressionEvaluator.evaluate(node.parameters.chatId, item, context, i);
       if (typeof chatId === 'string') chatId = chatId.trim();
-      if (!chatId || chatId === '@chatid' || chatId === '{{ $json.chatId }}') {
-        chatId = item.json.chatId || item.json.message?.chat?.id || item.json.message?.from?.id || '@ungdothevinh';
+      if (!chatId || chatId === '@chatid' || chatId === '{{ $json.chatId }}' || chatId.includes('$json.chatId')) {
+        chatId = item.json.chatId || item.json.message?.chat?.id || item.json.message?.from?.id;
       }
 
       let message = ExpressionEvaluator.evaluate(node.parameters.message, item, context, i);
       if (typeof message === 'string') message = message.trim();
-      if (!message || message === '{{ $json.aiResponse }}' || message.includes('Workflow hoàn thành thành công!') || message.includes('Kết quả: {{ JSON.stringify')) {
-        message = item.json.aiResponse || item.json.response || item.json.text || message || 'Xin chào Ưng Đỗ Thế Vinh!';
+      if (!message || message === '{{ $json.aiResponse }}' || message.includes('$json.aiResponse') || message.includes('Workflow hoàn thành thành công!') || message.includes('Kết quả: {{ JSON.stringify')) {
+        message = item.json.aiResponse || item.json.response || item.json.text || message || 'Xin chào! Cảm ơn bạn đã nhắn tin cho bot.';
       }
 
       const replyToMessageId =
         node.parameters.replyToMessageId ||
         item.json.replyToMessageId ||
         item.json.messageId ||
-        item.json.message?.message_id ||
-        142;
+        item.json.message?.message_id;
 
       if (!botToken) {
-        context.log(`[VinceTelegram Bot] Giả lập phản hồi AI Agent thành công tới ${chatId}`, 'info');
+        context.log(`[Telegram Bot] Giả lập phản hồi AI Agent thành công tới ${chatId || 'người gửi'}`, 'info');
         results.push({
           json: {
             ...item.json,
             telegramStatus: 'simulated_reply',
             action: 'Telegram Bot Reply to User',
             botReply: message,
-            recipient: chatId,
-            replyToMessageId,
+            recipientChatId: chatId || 'Tự động nhận theo Chat ID của người nhắn',
+            replyToMessageId: replyToMessageId || undefined,
             conversation: {
-              userMessage: item.json.userQuestion || item.json.text || item.json.message?.text || 'Xin chào AI Agent, hãy tư vấn giải pháp tự động hóa giúp tôi!',
+              incomingMessage: item.json.userQuestion || item.json.text || item.json.message?.text || 'Tin nhắn người dùng gửi tới bot',
               aiAgentReply: message,
-              status: 'Thành công (Bot đã nhận tin qua @id, gọi AI Agent và chuẩn bị phản hồi)',
+              status: 'Thành công (Bot đã nhận tin, gọi AI Agent và sẵn sàng gửi phản hồi)',
             },
-            guide: 'Để bot tự động gửi tin nhắn thật 24/7 trên Telegram: Nhập Bot Token từ @BotFather vào node Telegram hoặc phần Credentials.',
+            guide: 'Để bot tự động gửi tin nhắn thật 24/7 trên Telegram: Nhập Bot Token từ @BotFather vào ô cấu hình Token của node Telegram.',
           },
         });
         continue;
@@ -140,7 +139,7 @@ export class VinceTelegramNode implements INodeType {
             telegramStatus: 'error',
             error: errorDesc,
             chatId,
-            guide: 'Vui lòng kiểm tra lại Bot Token (từ @BotFather) hoặc Chat ID (@ungdothevinh). Nếu gửi cho tài khoản cá nhân, cần chat /start với bot trước.',
+            guide: 'Vui lòng kiểm tra lại Bot Token (từ @BotFather) hoặc Chat ID. Đối với tài khoản cá nhân, người nhận cần bấm /start với bot trước khi bot có thể gửi tin nhắn.',
           },
         });
       }

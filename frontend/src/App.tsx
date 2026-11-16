@@ -124,8 +124,17 @@ export function App() {
           const firstProj = projs[0];
           setSelectedProjectId(firstProj.id);
 
-          // Find first workflow across projects or in first project
-          const firstWf = firstProj.workflows?.[0] || projs.find((p) => p.workflows?.length)?.workflows?.[0];
+          // Re-open the last workflow the user worked on (fresh from backend), else the first one
+          let lastId: string | null = null;
+          try {
+            lastId = localStorage.getItem('vinceauto:lastWorkflowId');
+          } catch {
+            lastId = null;
+          }
+          const allWfs = projs.flatMap((p) => p.workflows || []);
+          const lastWf = lastId ? allWfs.find((w) => w.id === lastId) : undefined;
+          const firstWf = lastWf || firstProj.workflows?.[0] || projs.find((p) => p.workflows?.length)?.workflows?.[0];
+          if (lastWf?.projectId) setSelectedProjectId(lastWf.projectId);
           if (firstWf) {
             loadWorkflow(firstWf);
           } else {
@@ -318,6 +327,11 @@ export function App() {
 
   const loadWorkflow = (wf: IWorkflow) => {
     setCurrentWorkflow(wf);
+    try {
+      if (wf?.id) localStorage.setItem('vinceauto:lastWorkflowId', wf.id);
+    } catch {
+      // ignore storage errors
+    }
     const flowNodes: Node[] = (wf.nodes || []).map((n: any) => ({
       id: n.id,
       type: 'vinceNode',
@@ -361,11 +375,12 @@ export function App() {
     [setEdges]
   );
 
-  const handleSaveWorkflow = async () => {
+  const handleSaveWorkflow = async (overrides?: Partial<IWorkflow>) => {
     if (!currentWorkflow) return;
 
     const updatedWorkflow: IWorkflow = {
       ...currentWorkflow,
+      ...(overrides || {}),
       projectId: currentWorkflow.projectId || selectedProjectId || undefined,
       nodes: nodes.map((n) => ({
         id: n.id,
@@ -925,10 +940,13 @@ export function App() {
           onUpdateWorkflowName={(name) => {
             if (currentWorkflow) setCurrentWorkflow({ ...currentWorkflow, name });
           }}
-          onToggleActive={(active) => {
-            if (currentWorkflow) setCurrentWorkflow({ ...currentWorkflow, active });
+          onToggleActive={async (active) => {
+            if (!currentWorkflow) return;
+            // Optimistic UI, then persist to backend so "Published" survives reloads/restarts
+            setCurrentWorkflow({ ...currentWorkflow, active });
+            await handleSaveWorkflow({ active });
           }}
-          onSave={handleSaveWorkflow}
+          onSave={() => handleSaveWorkflow()}
           onExecute={handleExecuteWorkflow}
           onExportWorkflow={handleExportJson}
           onOpenTasks={() => setShowTasksModal(true)}

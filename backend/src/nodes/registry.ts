@@ -135,21 +135,8 @@ export class NodeRegistry {
         context.log(
           `[VinceAuto Universal Adapter] Executing node "${node.name}" (${name}) with resource=${params.resource || 'default'}, operation=${params.operation || params.event || 'execute'}`
         );
-        return items.map((item, idx) => ({
-          json: {
-            ...item.json,
-            _vinceExecution: {
-              nodeId: node.id,
-              nodeName: node.name,
-              nodeType: name,
-              resource: params.resource || undefined,
-              operation: params.operation || params.event || undefined,
-              parameters: params,
-              itemIndex: idx,
-              executedAt: new Date().toISOString(),
-              status: 'success',
-            },
-          },
+        return items.map((item) => ({
+          json: { ...item.json },
         }));
       },
     };

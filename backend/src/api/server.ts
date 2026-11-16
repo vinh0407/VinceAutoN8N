@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import axios from 'axios';
 import http from 'http';
 import path from 'path';
 import fs from 'fs';
@@ -11,6 +12,7 @@ import { AIWorkflowBuilder } from '../ai/workflow-builder.js';
 import { SelfHealingEngine } from '../ai/self-healing.js';
 import { globalAIRouter } from '../ai/router.js';
 import { globalCronScheduler } from '../scheduler/cron-manager.js';
+import { globalTelegramPoller } from '../scheduler/telegram-poller.js';
 
 export function createServer() {
   const app = express();
@@ -114,13 +116,31 @@ export function createServer() {
     if (!workflow.name) return res.status(400).json({ success: false, error: 'Workflow name is required' });
     const saved = globalWorkflowStore.saveWorkflow(workflow);
     globalCronScheduler.refresh();
+    globalTelegramPoller.refresh();
     res.json({ success: true, workflow: saved });
   });
 
   app.delete('/api/workflows/:id', (req, res) => {
     const ok = globalWorkflowStore.deleteWorkflow(req.params.id);
-    if (ok) globalCronScheduler.refresh();
+    if (ok) {
+      globalCronScheduler.refresh();
+      globalTelegramPoller.refresh();
+    }
     res.json({ success: ok });
+  });
+
+  // Publish / Unpublish (persisted, keeps running after restarts)
+  app.post('/api/workflows/:id/active', (req, res) => {
+    const wf = globalWorkflowStore.getWorkflow(req.params.id);
+    if (!wf) return res.status(404).json({ success: false, error: 'Workflow not found' });
+    const saved = globalWorkflowStore.saveWorkflow({ ...wf, active: Boolean(req.body?.active) });
+    globalCronScheduler.refresh();
+    globalTelegramPoller.refresh();
+    res.json({ success: true, workflow: saved, listeners: globalTelegramPoller.getStatus() });
+  });
+
+  app.get('/api/telegram/status', (req, res) => {
+    res.json({ success: true, listeners: globalTelegramPoller.getStatus() });
   });
 
   // 3. Execution
@@ -399,6 +419,35 @@ export function createServer() {
     }
   });
 
+  // 5.2. Test Telegram Bot API Token
+  app.post('/api/telegram/test-bot', async (req, res) => {
+    const { botToken } = req.body;
+    if (!botToken || typeof botToken !== 'string' || !botToken.trim()) {
+      return res.status(400).json({ success: false, error: 'Vui lòng nhập Bot Token từ @BotFather' });
+    }
+    try {
+      const response = await axios.get(`https://api.telegram.org/bot${botToken.trim()}/getMe`);
+      if (response.data?.ok) {
+        const bot = response.data.result;
+        res.json({
+          success: true,
+          message: `Kết nối thành công tới Bot @${bot.username} (${bot.first_name})`,
+          bot: {
+            id: bot.id,
+            username: bot.username,
+            firstName: bot.first_name,
+            canJoinGroups: bot.can_join_groups,
+          },
+        });
+      } else {
+        res.status(400).json({ success: false, error: 'Telegram từ chối token hoặc token không hợp lệ.' });
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.description || err.message;
+      res.status(500).json({ success: false, error: `Lỗi kết nối Telegram: ${msg}` });
+    }
+  });
+
   // 6. AI Self-Healing Diagnose
   app.post('/api/ai/self-healing', async (req, res) => {
     const { node, errorMessage, inputData, provider } = req.body;
@@ -448,6 +497,7 @@ export function createServer() {
       }
     }
 
+    globalTelegramPoller.refresh();
     res.json({ success: true, message: 'Cập nhật API Key thành công' });
   });
 
@@ -479,11 +529,11 @@ export function createServer() {
     }
 
     const telegramMessage = req.body?.message || req.body?.edited_message || req.body;
-    const extractedChatId = telegramMessage?.chat?.id || telegramMessage?.from?.id || req.body?.chat_id || req.body?.chatId || 118229444;
+    const extractedChatId = telegramMessage?.chat?.id || telegramMessage?.from?.id || req.body?.chat_id || req.body?.chatId;
     const extractedText = telegramMessage?.text || telegramMessage?.caption || (typeof req.body === 'string' ? req.body : req.body?.text) || '';
-    const extractedSender = telegramMessage?.from?.first_name || 'Ưng Đỗ Thế Vinh';
-    const extractedUsername = telegramMessage?.from?.username || 'ungdothevinh';
-    const extractedMessageId = telegramMessage?.message_id || 142;
+    const extractedSender = telegramMessage?.from?.first_name || telegramMessage?.from?.username || 'Khách hàng';
+    const extractedUsername = telegramMessage?.from?.username || 'user';
+    const extractedMessageId = telegramMessage?.message_id;
 
     const payload = {
       ...(typeof req.body === 'object' && req.body !== null ? req.body : {}),
@@ -527,7 +577,7 @@ export function createServer() {
     res.json({
       status: 'online',
       service: 'vinceauto-backend-api',
-      user: 'Ưng Đỗ Thế Vinh',
+      system: 'VinceAuto Automation Engine',
       version: '1.0.0',
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
@@ -570,7 +620,7 @@ export function createServer() {
         return res.json({
           status: 'online',
           name: 'VinceAuto Automation & AI Agent API',
-          user: 'Ưng Đỗ Thế Vinh',
+          system: 'VinceAuto Automation Engine',
           version: '1.0.0',
           uptime: process.uptime(),
           health: '/health',
@@ -653,7 +703,7 @@ export function createServer() {
   <div class="card">
     <div class="badge"><div class="pulse"></div> Backend API Đang Hoạt Động</div>
     <h1>VinceAuto API Service ⚡</h1>
-    <p>Máy chủ tự động hóa quy trình & điều phối AI Agent của <strong>Ưng Đỗ Thế Vinh</strong> đang trực tuyến và sẵn sàng xử lý yêu cầu.</p>
+    <p>Máy chủ tự động hóa quy trình & điều phối AI Agent đang trực tuyến và sẵn sàng xử lý yêu cầu.</p>
     <div class="grid">
       <a href="/health" class="btn"><span>/health</span> <span class="tag">Trạng thái</span></a>
       <a href="/ping" class="btn"><span>/ping</span> <span class="tag">Keep-Alive</span></a>
@@ -662,7 +712,7 @@ export function createServer() {
       <a href="/api/projects" class="btn"><span>/api/projects</span> <span class="tag">Dự án</span></a>
       <a href="/api/credentials" class="btn"><span>/api/credentials</span> <span class="tag">API Keys</span></a>
     </div>
-    <div class="footer">VinceAuto Platform v1.0.0 • Ưng Đỗ Thế Vinh</div>
+    <div class="footer">VinceAuto Platform v1.0.0 • Hệ thống tự động hóa & AI Agent</div>
   </div>
 </body>
 </html>`);

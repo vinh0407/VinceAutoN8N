@@ -597,7 +597,7 @@ export const ALL_APPS_CATALOG: Record<string, IAppCatalogItem> = {
     },
     fields: [
       { key: 'TELEGRAM_BOT_TOKEN', label: 'Bot Token (API Token từ @BotFather)', type: 'password', placeholder: '123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ' },
-      { key: 'TELEGRAM_CHAT_ID', label: 'Chat ID (@chatid hoặc ID số cá nhân/nhóm)', type: 'string', placeholder: '@ungdothevinh hoặc 118229444' },
+      { key: 'TELEGRAM_CHAT_ID', label: 'Chat ID (@username hoặc ID số - Mặc định ai nhắn bot reply người đó)', type: 'string', placeholder: '{{ $json.chatId || $json.message.chat.id }}' },
     ],
     triggers: [
       { id: 'trigger.telegram.message', title: 'On Message', desc: '[T/W] Triggers when a new message of any kind — text, photo, sticker, etc. — is received', type: 'trigger.appEvent', resource: 'Message', eventValue: 'Message', mechanism: 'W', status: 'NATIVE', defaultParams: { app: 'telegram', updates: ['Message'] } },
@@ -657,23 +657,25 @@ export const ALL_APPS_CATALOG: Record<string, IAppCatalogItem> = {
       message: {
         message_id: 142,
         from: {
-          id: 118229444,
+          id: 581920391,
           is_bot: false,
-          first_name: 'Thế Vinh',
-          last_name: 'Ưng Đỗ',
-          username: 'ungdothevinh',
+          first_name: 'Minh',
+          last_name: 'Nguyen',
+          username: 'minhnguyen_vn',
           language_code: 'vi',
         },
         chat: {
-          id: 118229444,
-          first_name: 'Thế Vinh',
-          last_name: 'Ưng Đỗ',
-          username: 'ungdothevinh',
+          id: 581920391,
+          first_name: 'Minh',
+          last_name: 'Nguyen',
+          username: 'minhnguyen_vn',
           type: 'private',
         },
         date: 1731142800,
-        text: 'Xin chào Ưng Đỗ Thế Vinh! Bạn chỉ cần điền Bot Token (API) từ @BotFather và @chatid để gửi tin nhắn tự động. Kéo thả {{ $json.message.text }} vào ô Parameters ở giữa để sử dụng dữ liệu này.',
+        text: 'Xin chào AI Agent, hãy tư vấn cho tôi về giải pháp tự động hóa.',
       },
+      chatId: 581920391,
+      text: 'Xin chào AI Agent, hãy tư vấn cho tôi về giải pháp tự động hóa.',
     },
   },
 

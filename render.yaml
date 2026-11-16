@@ -21,3 +21,9 @@ services:
         value: crouton-alpha-free
       - key: OPENCODE2_API_KEY
         sync: false
+      # Telegram bot token from @BotFather (can also be set inside the app)
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      # GitHub token with "gist" scope -> keeps workflows/published state across restarts on the free plan
+      - key: GITHUB_BACKUP_TOKEN
+        sync: false

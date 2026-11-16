@@ -123,19 +123,11 @@ export function createGenericAiNode(def: IAiNodeDef): INodeType {
 
       const items = inputData.length > 0 ? inputData : [{ json: {} }];
 
-      // Default high-performance AI execution mock/response
+      // Default clean execution pass-through
       const results: INodeExecutionData[] = items.map((item: INodeExecutionData) => {
         return {
           json: {
             ...item.json,
-            _aiExecution: {
-              node: def.name,
-              displayName: def.displayName,
-              aiGroup: def.aiGroup,
-              timestamp: new Date().toISOString(),
-              status: 'success',
-              parameters: nodeParams,
-            },
           },
         };
       });

@@ -119,7 +119,7 @@ export class VinceModelRouterNode implements INodeType {
       }
 
       const defaultSystem =
-        'Bạn là AI Agent trợ lý thông minh trên Telegram của Ưng Đỗ Thế Vinh. Hãy trả lời câu hỏi của người dùng một cách chính xác, thân thiện và hữu ích.';
+        'Bạn là trợ lý ảo AI thông minh trên Telegram. Hãy trả lời câu hỏi của người dùng một cách chính xác, khách quan, lịch sự và hữu ích.';
       const systemToSend = evaluatedSystem || defaultSystem;
 
       const messages: any[] = [];
@@ -149,9 +149,9 @@ export class VinceModelRouterNode implements INodeType {
         apiKey,
       });
 
-      const chatId = item.json.chatId || item.json.message?.chat?.id || item.json.message?.from?.id || 118229444;
-      const replyToMessageId = item.json.replyToId || item.json.messageId || item.json.message?.message_id || 142;
-      const sender = item.json.sender || item.json.message?.from?.first_name || 'Ưng Đỗ Thế Vinh';
+      const chatId = item.json.chatId || item.json.message?.chat?.id || item.json.message?.from?.id;
+      const replyToMessageId = item.json.replyToId || item.json.messageId || item.json.message?.message_id;
+      const sender = item.json.sender || item.json.message?.from?.first_name || 'Khách hàng';
 
       results.push({
         json: {

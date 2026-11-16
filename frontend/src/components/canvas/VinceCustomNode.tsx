@@ -21,8 +21,11 @@ import {
   Send,
   Layers,
   Copy,
+  MessageCircle,
+  PenLine,
 } from 'lucide-react';
 import { INodeData } from '../../types';
+import { resolveBrandIcon } from './BrandIcons';
 
 // Authentic n8n Manual Trigger Icon SVG (Radar target with pointer)
 const ManualTriggerIcon = () => (
@@ -65,11 +68,13 @@ export const VinceCustomNode = memo((props: any) => {
     triggerTitle = 'On webhook call';
   }
 
-  // Pick matching icon
+  // Pick matching icon: original brand logo first, then generic fallback
+  const BrandIcon = resolveBrandIcon(nodeData as any);
   let IconComponent: any = Globe;
   if (nodeData.type === 'trigger.manual') IconComponent = ManualTriggerIcon;
   else if (nodeData.type?.includes('cron')) IconComponent = Clock;
   else if (nodeData.type?.includes('webhook')) IconComponent = Radio;
+  else if (nodeData.type?.includes('chat')) IconComponent = MessageCircle;
   else if (nodeData.type?.includes('modelRouter')) IconComponent = Cpu;
   else if (nodeData.type?.includes('agentManager') || nodeData.type?.includes('leadGen')) IconComponent = Bot;
   else if (nodeData.type?.includes('scraper')) IconComponent = Search;
@@ -77,6 +82,7 @@ export const VinceCustomNode = memo((props: any) => {
   else if (nodeData.type?.includes('zone')) IconComponent = Layers;
   else if (nodeData.type?.includes('code')) IconComponent = Code2;
   else if (nodeData.type?.includes('filter')) IconComponent = GitFork;
+  else if (nodeData.type?.includes('editFields') || nodeData.type?.includes('transform.set')) IconComponent = PenLine;
 
   const status = nodeData.status || 'idle';
   const isDisabled = Boolean(nodeData.parameters?._disabled);
@@ -258,7 +264,9 @@ export const VinceCustomNode = memo((props: any) => {
 
         {/* Center Node Icon */}
         <div className="w-10 h-10 flex items-center justify-center text-white">
-          {React.isValidElement(IconComponent) ? (
+          {BrandIcon ? (
+            <BrandIcon size={38} />
+          ) : React.isValidElement(IconComponent) ? (
             IconComponent
           ) : IconComponent ? (
             React.createElement(IconComponent, { className: 'w-7 h-7 stroke-[1.8]' })

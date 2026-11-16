@@ -828,8 +828,8 @@ QUY TẮC SINH WORKFLOW TỰ ĐỘNG:
         position: nextPos(),
         parameters: {
           channel: isTelegramChat ? 'telegram' : 'multichannel_chat',
-          chatId: '@ungdothevinh',
-          welcomeMessage: 'Xin chào Ưng Đỗ Thế Vinh! AI Agent sẵn sàng tiếp nhận câu hỏi của bạn.',
+          chatId: '{{ $json.chatId || $json.message.chat.id }}',
+          welcomeMessage: 'Xin chào! Trợ lý AI sẵn sàng tiếp nhận câu hỏi của bạn.',
         },
       };
       steps.push(isTelegramChat ? 'Lắng nghe tin nhắn Telegram gửi tới Bot (qua API hoặc Webhook và @id)' : 'Lắng nghe tin nhắn khách hàng theo thời gian thực qua Chat Trigger (trigger.chat)');
@@ -929,9 +929,9 @@ QUY TẮC SINH WORKFLOW TỰ ĐỘNG:
           fields: isTelegramChat
             ? {
                 userQuery: '{{ $json.text || $json.message.text }}',
-                chatId: '{{ $json.chatId || $json.message.chat.id || 118229444 }}',
-                messageId: '{{ $json.messageId || $json.message.message_id || 142 }}',
-                sender: '{{ $json.sender || $json.message.from.first_name || "Ưng Đỗ Thế Vinh" }}',
+                chatId: '{{ $json.chatId || $json.message.chat.id }}',
+                messageId: '{{ $json.messageId || $json.message.message_id }}',
+                sender: '{{ $json.sender || $json.message.from.first_name || "Khách hàng" }}',
               }
             : {
                 source: 'VinceAuto_Pipeline',
@@ -992,7 +992,7 @@ QUY TẮC SINH WORKFLOW TỰ ĐỘNG:
             ? '{{ $json.userQuery || $json.text || $json.message.text }}'
             : `Bạn là AI Agent tự động hóa của VinceAuto. Hãy phân tích dữ liệu sau và tạo nội dung xử lý tối ưu cho yêu cầu "${prompt}":\n{{ JSON.stringify($json) }}`,
           systemPrompt: isTelegramChat
-            ? 'Bạn là AI Agent trợ lý thông minh trên Telegram của Ưng Đỗ Thế Vinh. Hãy trả lời câu hỏi của người dùng một cách chính xác, thân thiện và hữu ích.'
+            ? 'Bạn là trợ lý ảo AI thông minh trên Telegram. Hãy trả lời câu hỏi của người dùng một cách chính xác, khách quan, lịch sự và hữu ích.'
             : 'Bạn là chuyên gia tự động hóa của VinceAuto.',
         },
       });
@@ -1232,7 +1232,7 @@ QUY TẮC SINH WORKFLOW TỰ ĐỘNG:
         parameters: {
           resource: 'message',
           operation: 'sendMessage',
-          chatId: isTelegramChat ? '{{ $json.chatId }}' : '@ungdothevinh',
+          chatId: '{{ $json.chatId || $json.message.chat.id }}',
           message: isTelegramChat
             ? '{{ $json.aiResponse || $json.text }}'
             : `🤖 [VinceAuto AI Agent - Opencode2 crouton-alpha-free]\n✅ Hoàn tất quy trình: ${prompt}\n📊 Kết quả: {{ $json.text || $json.data || "Thành công" }}`,

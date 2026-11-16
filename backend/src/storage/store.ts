@@ -51,6 +51,23 @@ export class WorkflowStore {
     this.load();
   }
 
+  /** Absolute data directory (used by cloud backup). */
+  getDataDir(): string {
+    return this.dataDir;
+  }
+
+  /** Re-read all JSON files from disk (after cloud restore). */
+  reload() {
+    this.projects.clear();
+    this.workflows.clear();
+    this.tasks.clear();
+    this.versions.clear();
+    this.tables.clear();
+    this.credentials = {};
+    this.executionHistory = [];
+    this.load();
+  }
+
   private load() {
     // 1. Projects - Clean start (No sample projects auto-injected)
     if (fs.existsSync(this.projectsFile)) {
@@ -621,8 +638,8 @@ export class WorkflowStore {
           position: [980, 240],
           parameters: {
             botToken: '',
-            chatId: '@ungdothevinh',
-            message: '🚀 [VinceAuto Daily Tech Brief - Ưng Đỗ Thế Vinh]\n{{ $json.aiResponse }}',
+            chatId: '{{ $json.chatId || $json.message.chat.id }}',
+            message: '🚀 [VinceAuto Daily Tech Brief]\n{{ $json.aiResponse }}',
             parseMode: 'HTML',
           },
         },

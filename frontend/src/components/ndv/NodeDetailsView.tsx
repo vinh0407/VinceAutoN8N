@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { INodeDescription } from '../../types';
+import { resolveBrandIcon } from '../canvas/BrandIcons';
 import { ALL_APPS_CATALOG, IAppCatalogItem } from '../../data/allAppsActionsTriggers';
 
 interface NodeDetailsViewProps {
@@ -49,16 +50,29 @@ interface NodeDetailsViewProps {
   onClose: () => void;
 }
 
+// Helper to recursively strip internal metadata keys starting with underscore
+function sanitizeJsonForDisplay(obj: any): any {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(sanitizeJsonForDisplay);
+  const clean: Record<string, any> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (k.startsWith('_')) continue;
+    clean[k] = sanitizeJsonForDisplay(v);
+  }
+  return clean;
+}
+
 // Helper to flatten JSON object into draggable schema paths
 function flattenObjectToPaths(
   obj: any,
   prefix = ''
 ): { path: string; key: string; value: any; type: string }[] {
   if (!obj || typeof obj !== 'object') return [];
+  const sanitized = sanitizeJsonForDisplay(obj);
   const results: { path: string; key: string; value: any; type: string }[] = [];
-  for (const k of Object.keys(obj)) {
+  for (const k of Object.keys(sanitized)) {
     const fullPath = prefix ? `${prefix}.${k}` : k;
-    const val = obj[k];
+    const val = sanitized[k];
     const valType = Array.isArray(val) ? 'array' : typeof val;
     results.push({ path: fullPath, key: k, value: val, type: valType });
     if (val && typeof val === 'object' && !Array.isArray(val)) {
@@ -299,6 +313,14 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
     reply?: string;
   } | null>(null);
 
+  // Telegram Bot specific test state
+  const [isTestingTelegramBot, setIsTestingTelegramBot] = useState(false);
+  const [telegramBotTestResult, setTelegramBotTestResult] = useState<{
+    success: boolean;
+    bot?: { id: number; username?: string; firstName?: string };
+    message?: string;
+  } | null>(null);
+
   // Bottom trigger info drawer
   const [showTriggerHelp, setShowTriggerHelp] = useState(false);
 
@@ -487,23 +509,25 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
       message: {
         message_id: 142,
         from: {
-          id: 118229444,
+          id: 987654321,
           is_bot: false,
-          first_name: 'Thế Vinh',
-          last_name: 'Ưng Đỗ',
-          username: 'ungdothevinh',
+          first_name: 'Khách',
+          last_name: 'Hàng',
+          username: 'khachhang_telegram',
           language_code: 'vi',
         },
         chat: {
-          id: 118229444,
-          first_name: 'Thế Vinh',
-          last_name: 'Ưng Đỗ',
-          username: 'ungdothevinh',
+          id: 987654321,
+          first_name: 'Khách',
+          last_name: 'Hàng',
+          username: 'khachhang_telegram',
           type: 'private',
         },
-        date: 1731142800,
-        text: 'Xin chào Ưng Đỗ Thế Vinh! Bạn chỉ cần điền Bot Token (API) từ @BotFather và @chatid để gửi tin nhắn tự động. Kéo thả {{ $json.message.text }} vào ô Parameters ở giữa để sử dụng dữ liệu này.',
+        date: Math.floor(Date.now() / 1000),
+        text: 'Xin chào! Tôi cần hỗ trợ tư vấn dịch vụ.',
       },
+      chatId: 987654321,
+      text: 'Xin chào! Tôi cần hỗ trợ tư vấn dịch vụ.',
       timestamp: new Date().toISOString(),
     };
     setMockDataText(JSON.stringify([sample], null, 2));
@@ -598,6 +622,42 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
     }
   };
 
+  const handleTestTelegramBot = async () => {
+    const token = (parameters.botToken || '').trim();
+    if (!token) {
+      setTelegramBotTestResult({
+        success: false,
+        message: 'Vui lòng nhập Bot Token từ @BotFather trước khi kiểm tra.',
+      });
+      return;
+    }
+    setIsTestingTelegramBot(true);
+    setTelegramBotTestResult(null);
+    try {
+      const res = await axios.post('/api/telegram/test-bot', { botToken: token });
+      if (res.data?.success && res.data?.bot) {
+        const bot = res.data.bot;
+        setTelegramBotTestResult({
+          success: true,
+          bot,
+          message: `Xác thực thành công! Bot: @${bot.username || bot.firstName} (ID: ${bot.id})`,
+        });
+      } else {
+        setTelegramBotTestResult({
+          success: false,
+          message: res.data?.error || 'Token không hợp lệ hoặc bot không phản hồi.',
+        });
+      }
+    } catch (err: any) {
+      setTelegramBotTestResult({
+        success: false,
+        message: err.response?.data?.error || err.message || 'Không thể kết nối Telegram Bot API.',
+      });
+    } finally {
+      setIsTestingTelegramBot(false);
+    }
+  };
+
   // Sample upstream input data for action nodes so user can always drag & drop fields
   const effectiveInputItems =
     inputData.length > 0
@@ -643,18 +703,18 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
     },
     {
       name: 'chatId',
-      displayName: 'Chat ID (@chatid hoặc ID số cá nhân/nhóm)',
+      displayName: 'Chat ID (@username hoặc ID số - Ai nhắn bot reply người đó)',
       type: 'string',
-      default: '@ungdothevinh',
-      placeholder: '@ungdothevinh hoặc 118229444',
+      default: '{{ $json.chatId || $json.message.chat.id }}',
+      placeholder: '{{ $json.chatId }} hoặc ID số người nhận',
       required: true,
     },
     {
       name: 'message',
-      displayName: 'Nội Dung Tin Nhắn (Kéo thả trường từ INPUT)',
+      displayName: 'Nội Dung Tin Nhắn Phản Hồi (Text Message)',
       type: 'code',
-      default: 'Xin chào Ưng Đỗ Thế Vinh! Kéo thả {{ $json.message.text }} từ cột INPUT vào đây để gửi.',
-      placeholder: 'Nhập nội dung hoặc kéo thả {{ $json.message.text }}...',
+      default: '{{ $json.aiResponse || $json.text }}',
+      placeholder: '{{ $json.aiResponse }} hoặc kéo thả câu trả lời từ AI Agent...',
       required: true,
     },
     {
@@ -747,6 +807,8 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
     ? properties.filter(
         (p) => !['baseUrl', 'model', 'customModel', 'apiKey', 'provider'].includes(p.name)
       )
+    : isTelegram
+    ? properties.filter((p) => p.name !== 'botToken')
     : properties;
   const webhookUrl = `https://vinceauto.local/webhook-test/${node.id.replace(/[^a-zA-Z0-9-]/g, '')}`;
 
@@ -758,20 +820,19 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
         {/* ================================================================= */}
         <div className="h-12 px-4 border-b border-[#2d2d30] bg-[#222225] flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-2.5">
-            {/* App Icon Badge */}
-            {appCatalog?.id === 'telegram' ? (
-              <div className="w-6 h-6 rounded-full bg-[#229ED9] flex items-center justify-center text-white shadow-sm shrink-0">
-                <Send className="w-3.5 h-3.5 -ml-0.5 rotate-12 fill-current" />
-              </div>
-            ) : appCatalog?.id === 'zalo' ? (
-              <div className="w-6 h-6 rounded-md bg-[#0068FF] text-white flex items-center justify-center font-bold text-[9px] shrink-0">
-                Zalo
-              </div>
-            ) : (
-              <div className="w-6 h-6 rounded-md bg-[#2f2f35] border border-[#42424a] text-[#e6e8ec] flex items-center justify-center shrink-0">
-                <Globe className="w-3.5 h-3.5" />
-              </div>
-            )}
+            {/* App Icon Badge (original brand logo & colors) */}
+            {(() => {
+              const NdvBrandIcon = resolveBrandIcon({ type: nodeType, name: nodeName, parameters });
+              return NdvBrandIcon ? (
+                <div className="w-6 h-6 flex items-center justify-center shrink-0">
+                  <NdvBrandIcon size={24} />
+                </div>
+              ) : (
+                <div className="w-6 h-6 rounded-md bg-[#2f2f35] border border-[#42424a] text-[#e6e8ec] flex items-center justify-center shrink-0">
+                  <Globe className="w-3.5 h-3.5" />
+                </div>
+              );
+            })()}
 
             <input
               type="text"
@@ -1276,26 +1337,98 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                     </div>
                   )}
 
-                  {/* Hướng dẫn cấu hình Telegram cá nhân hóa cho Ưng Đỗ Thế Vinh */}
+                  {/* TELEGRAM BOT API CONFIGURATION PANEL (Primary) */}
                   {isTelegram && (
-                    <div className="p-3.5 rounded-lg bg-[#14232c] border border-[#1e4868] text-xs space-y-2">
-                      <div className="font-semibold text-sky-400 flex items-center space-x-1.5">
-                        <Send className="w-3.5 h-3.5 text-sky-400" />
-                        <span>Hướng dẫn thiết lập Telegram cho Ưng Đỗ Thế Vinh:</span>
+                    <div className="p-4 rounded-xl bg-[#14232c] border border-[#1e4868] text-xs space-y-3.5 shadow-xl">
+                      <div className="flex items-center justify-between border-b border-[#1e3a52] pb-2.5">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-6 h-6 rounded-full bg-[#229ED9] flex items-center justify-center text-white">
+                            <Send className="w-3.5 h-3.5 -ml-0.5" />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-zinc-100">Cấu hình Telegram Bot API</div>
+                            <div className="text-[11px] text-zinc-400">
+                              Bot trả lời tự động cho bất kỳ người dùng nào nhắn tin.
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-zinc-300 text-[11.5px] leading-relaxed space-y-1">
+
+                      {/* Bot Token */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-medium text-zinc-200 flex items-center space-x-1.5">
+                            <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                            <span>1. Bot Token (lấy từ <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" className="text-sky-400 underline">@BotFather</a>)</span>
+                            <span className="text-rose-400">*</span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setShowApiKey(!showApiKey)}
+                            className="text-[11px] text-zinc-400 hover:text-white flex items-center space-x-1"
+                          >
+                            {showApiKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                            <span>{showApiKey ? 'Ẩn' : 'Hiện'}</span>
+                          </button>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type={showApiKey ? 'text' : 'password'}
+                            value={parameters.botToken || ''}
+                            onChange={(e) => {
+                              handleFieldChange('botToken', e.target.value);
+                              setTelegramBotTestResult(null);
+                            }}
+                            placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
+                            className="flex-1 bg-[#0e1217] border border-[#263242] rounded-md px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 font-mono focus:outline-none focus:border-sky-400"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleTestTelegramBot}
+                            disabled={isTestingTelegramBot}
+                            className="px-3 py-2 rounded-md bg-[#229ED9] hover:bg-sky-400 text-white font-semibold text-xs flex items-center space-x-1.5 disabled:opacity-50 shrink-0"
+                          >
+                            {isTestingTelegramBot ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Zap className="w-3.5 h-3.5" />
+                            )}
+                            <span>{isTestingTelegramBot ? 'Đang kiểm tra...' : 'Kiểm tra Token'}</span>
+                          </button>
+                        </div>
+                        {telegramBotTestResult && (
+                          <div
+                            className={`px-3 py-1.5 rounded-md text-xs flex items-center space-x-1.5 ${
+                              telegramBotTestResult.success
+                                ? 'bg-emerald-950/80 border border-emerald-500/50 text-emerald-300'
+                                : 'bg-rose-950/80 border border-rose-500/50 text-rose-300'
+                            }`}
+                          >
+                            {telegramBotTestResult.success ? (
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            ) : (
+                              <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                            )}
+                            <span>{telegramBotTestResult.message}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="text-zinc-300 text-[11.5px] leading-relaxed space-y-1 pt-1 border-t border-[#1e3a52]">
                         <div>
-                          1. <strong>Cấu hình Bot tối giản:</strong> Chỉ cần điền <strong>Bot Token (API)</strong> từ bot <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" className="text-sky-400 underline font-medium">@BotFather</a> và <strong>@chatid</strong> (nhập <code className="bg-black/50 px-1 py-0.5 rounded text-sky-200 font-mono">@ungdothevinh</code> hoặc ID số Telegram của bạn).
+                          2. <strong>Người nhận (Chat ID):</strong> Mặc định{' '}
+                          <code className="bg-black/50 px-1 py-0.5 rounded text-sky-200 font-mono">{'{{ $json.chatId || $json.message.chat.id }}'}</code>{' '}
+                          — bot tự động trả lời đúng người vừa nhắn, không giới hạn người dùng.
                         </div>
                         <div>
-                          2. <strong>Kéo thả tham số:</strong> Nhấp giữ chuột vào trường dữ liệu ở cột <strong>INPUT</strong> bên trái (VD: <code className="bg-black/50 px-1 py-0.5 rounded text-amber-300 font-mono">{'{{ $json.message.text }}'}</code>) rồi thả trực tiếp vào ô tham số bên dưới.
-                        </div>
-                        <div>
-                          3. <strong>Kiểm tra ngay:</strong> Bấm nút <strong>Execute step</strong> ở góc trên bên phải để kiểm tra gửi tin nhắn hoặc giả lập chạy thử.
+                          3. <strong>Nội dung trả lời:</strong> Mặc định{' '}
+                          <code className="bg-black/50 px-1 py-0.5 rounded text-amber-300 font-mono">{'{{ $json.aiResponse || $json.text }}'}</code>{' '}
+                          — lấy câu trả lời từ nút AI Agent phía trước (có thể dùng bất kỳ AI nào có API).
                         </div>
                       </div>
                     </div>
                   )}
+
 
                   {/* DEDICATED AI AGENT CONFIGURATION PANEL (Independent Node Settings) */}
                   {isAiAgent && !isTelegram && (
