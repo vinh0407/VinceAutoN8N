@@ -823,11 +823,11 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
         if (opts.apiKey) params.apiKey = opts.apiKey;
       }
 
-      // Ensure objective dynamic chatId on Telegram nodes
+      // Ensure objective dynamic chatId on Telegram nodes (with Vinh Ung fallback)
       if (type === 'vince.telegram') {
         const cid = String(params.chatId || '').trim();
         if (!cid || cid === '-100123456789' || cid.includes('ungdothevinh')) {
-          params.chatId = '{{ $json.chatId || $json.message.chat.id }}';
+          params.chatId = '{{ $json.chatId || $json.message.chat.id || "1869249751" }}';
         }
         if (!params.message) {
           params.message = '{{ $json.aiResponse || $json.text }}';
@@ -1147,7 +1147,7 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
       steps.push(`Điều phối tổ hợp Multi-Agent trên model ${activeModel} (vince.agentManager)`);
     } else {
       const isTelegramChat = p.includes('telegram') || p.includes('tele') || p.includes('botchat') || p.includes('zalo');
-      aiNodeId = 'node_ai_opencode2';
+      aiNodeId = 'node_ai_agent';
       nodes.push({
         id: aiNodeId,
         name: `AI Agent (${activeModel})`,

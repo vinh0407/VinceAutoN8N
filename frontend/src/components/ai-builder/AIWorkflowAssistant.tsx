@@ -108,6 +108,27 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
     }
   }, [selectedAgentLog]);
 
+  useEffect(() => {
+    if (customApiKey.trim()) return;
+    axios
+      .get('/api/credentials')
+      .then((res) => {
+        const savedKey = res.data?.credentials?.GEMINI_API_KEY;
+        if (typeof savedKey === 'string' && savedKey.trim()) {
+          setCustomApiKey(savedKey.trim());
+          setApiKeySavedMsg('Đã nạp Key từ hệ thống');
+          try {
+            localStorage.setItem('vinceauto:gemini_api_key', savedKey.trim());
+          } catch {
+            // ignore
+          }
+        }
+      })
+      .catch(() => {
+        // ignore network errors on mount
+      });
+  }, []);
+
   const executePrompt = async (
     promptToRun: string,
     autoApply = false,

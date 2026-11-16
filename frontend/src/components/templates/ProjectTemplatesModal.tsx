@@ -974,10 +974,33 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
 
   const handleApplyTemplate = (tpl: IN8nTemplateItem) => {
     const optimized = optimizeTemplateForVinceAuto(tpl);
+    let savedGeminiKey = '';
+    try {
+      savedGeminiKey = (localStorage.getItem('vinceauto:gemini_api_key') || '').trim();
+    } catch {
+      savedGeminiKey = '';
+    }
+
+    const personalizedNodes = optimized.nodes.map((n) => {
+      const params = { ...(n.parameters || {}) };
+      if (n.type === 'vince.modelRouter' || n.type === 'vince.agentManager' || n.type.startsWith('ai.')) {
+        if (savedGeminiKey && !params.apiKey) {
+          params.apiKey = savedGeminiKey;
+        }
+      }
+      if (n.type === 'vince.telegram') {
+        const cid = String(params.chatId || '').trim();
+        if (!cid || cid === '{{ $json.chatId || $json.message.chat.id }}') {
+          params.chatId = '{{ $json.chatId || $json.message?.chat?.id || "1869249751" }}';
+        }
+      }
+      return { ...n, parameters: params };
+    });
+
     const newWorkflow: IWorkflow = {
       id: `wf_tpl_${Date.now()}`,
       name: optimized.titleVi,
-      nodes: optimized.nodes,
+      nodes: personalizedNodes,
       connections: optimized.connections,
       active: false,
       createdAt: new Date().toISOString(),
@@ -989,32 +1012,57 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-150 select-none">
-      <div className="w-[1200px] max-w-[96vw] h-[86vh] bg-[#18181b] border border-[#2e2e33] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-        {/* Top Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#28282c] bg-[#141416] shrink-0">
-          <div className="flex items-center space-x-3">
-            <div className="p-2.5 rounded-xl bg-[#242428] border border-[#34343a] text-[#e6e8ec] shadow-sm">
-              <LayoutGrid className="w-5 h-5" />
+      <div className="w-[1220px] max-w-[96vw] h-[86vh] bg-[#161619] border border-[#2b2b30] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+        {/* Clean Top Header */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#25252a] bg-[#131316] shrink-0 gap-4">
+          <div className="flex items-center space-x-3 min-w-0">
+            <div className="p-2 rounded-xl bg-[#222227] border border-[#323239] text-[#e6e8ec]">
+              <LayoutGrid className="w-4 h-4" />
             </div>
-            <div>
-              <div className="flex items-center space-x-2.5">
-                <h2 className="text-base font-bold text-[#e6e8ec] tracking-tight">
-                  Kho Mẫu Dự Án Cá Nhân Hóa — Vinh Ưng (Tối Ưu Google Gemini & Đa Kênh MXH)
+            <div className="min-w-0">
+              <div className="flex items-center space-x-2">
+                <h2 className="text-sm font-bold text-[#f0f2f5] tracking-tight truncate">
+                  Mẫu Dự Án Cá Nhân Hóa — Vinh Ưng
                 </h2>
-                <span className="px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-[#26262b] text-[#e6e8ec] border border-[#3a3a42]">
-                  {allTemplates.length} Mẫu Đã Tối Ưu
+                <span className="px-2 py-0.5 text-[10.5px] font-semibold rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30 shrink-0">
+                  Google Gemini
                 </span>
               </div>
-              <p className="text-xs text-zinc-400 mt-0.5">
-                Toàn bộ mẫu đã được chuẩn hóa mã Node VinceAuto, cá nhân hóa cho Vinh Ưng (@ungvinh0407) & vận hành mặc định trên Google Gemini ({GEMINI_DEFAULT_CONFIG.models})
+              <p className="text-[11px] text-zinc-400 truncate mt-0.5">
+                Đã nhập sẵn @ungvinh0407 • Telegram ID 1869249751 • Model {GEMINI_DEFAULT_CONFIG.models}
               </p>
             </div>
           </div>
 
-          {/* Search & Close */}
-          <div className="flex items-center space-x-3">
-            <div className="relative w-80">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+          {/* Segmented View Switch + Search + Close */}
+          <div className="flex items-center space-x-2.5 shrink-0">
+            <div className="flex items-center p-0.5 rounded-lg bg-[#1e1e22] border border-[#2d2d34] text-[11px]">
+              <button
+                type="button"
+                onClick={() => setSelectedCategory('VINCEAUTO_FEATURED')}
+                className={`px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer ${
+                  selectedCategory === 'VINCEAUTO_FEATURED'
+                    ? 'bg-[#2e2e36] text-white'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                Dành cho tôi ({VINCEAUTO_FEATURED_TEMPLATES.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory('ALL')}
+                className={`px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer ${
+                  selectedCategory !== 'VINCEAUTO_FEATURED'
+                    ? 'bg-[#2e2e36] text-white'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                Tất cả ({allTemplates.length})
+              </button>
+            </div>
+
+            <div className="relative w-64">
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
               <input
                 type="text"
                 value={searchQuery}
@@ -1024,14 +1072,14 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
                     setSelectedCategory('ALL');
                   }
                 }}
-                placeholder="Tìm mẫu (VD: TikTok, Threads, Shopee, Zalo, Telegram, RAG)..."
-                className="w-full bg-[#202024] border border-[#323238] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-300"
+                placeholder="Tìm mẫu (Facebook, Telegram, Zalo...)"
+                className="w-full bg-[#1e1e22] border border-[#2f2f36] rounded-lg pl-8 pr-7 py-1.5 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-400"
                 autoFocus
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -1040,218 +1088,171 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
 
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-[#252529] transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-[#242429] transition-colors cursor-pointer"
               title="Đóng"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Main 3-Column Body */}
+        {/* Main Body */}
         <div className="flex-1 flex min-h-0 overflow-hidden">
-          {/* Left Column: Categories List */}
-          <div className="w-[280px] border-r border-[#28282c] bg-[#141416] overflow-y-auto p-3 space-y-1 custom-scrollbar shrink-0">
-            <div className="px-2.5 py-1.5 text-[10.5px] font-bold uppercase tracking-wider text-zinc-400">
-              Danh mục mẫu dự án ({categories.length})
+          {/* Slim Sidebar (shown when browsing All / Categories) */}
+          {selectedCategory !== 'VINCEAUTO_FEATURED' && (
+            <div className="w-[225px] border-r border-[#25252a] bg-[#131316] overflow-y-auto p-2.5 space-y-1 custom-scrollbar shrink-0">
+              <button
+                onClick={() => setSelectedCategory('ALL')}
+                className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs transition-colors cursor-pointer ${
+                  selectedCategory === 'ALL'
+                    ? 'bg-[#26262c] text-white font-semibold'
+                    : 'text-zinc-400 hover:text-white hover:bg-[#1d1d22]'
+                }`}
+              >
+                <div className="flex items-center space-x-2 truncate">
+                  <Layers className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">Tất cả danh mục</span>
+                </div>
+                <span className="text-[10px] text-zinc-400 font-mono">{allTemplates.length}</span>
+              </button>
+
+              {categories.map((cat) => {
+                const active = selectedCategory === cat.key;
+                const isFeatured = cat.key === 'VINCEAUTO_FEATURED';
+                return (
+                  <button
+                    key={cat.key}
+                    onClick={() => {
+                      setSelectedCategory(cat.key);
+                      const firstInCat = allTemplates.find((t) => t.category === cat.key);
+                      if (firstInCat) setPreviewTemplate(firstInCat);
+                    }}
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
+                      active
+                        ? 'bg-[#26262c] text-white font-semibold'
+                        : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1d1d22]'
+                    }`}
+                    title={cat.nameVi}
+                  >
+                    <div className="flex items-center space-x-2 truncate pr-2">
+                      {isFeatured ? (
+                        <Zap className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                      ) : (
+                        <FolderClosed className="w-3.5 h-3.5 shrink-0 text-zinc-500" />
+                      )}
+                      <span className="truncate text-left">{cat.nameVi}</span>
+                    </div>
+                    <span className="text-[10px] text-zinc-500 font-mono shrink-0">{cat.count}</span>
+                  </button>
+                );
+              })}
             </div>
+          )}
 
-            <button
-              onClick={() => setSelectedCategory('ALL')}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
-                selectedCategory === 'ALL'
-                  ? 'bg-[#28282d] text-[#e6e8ec] font-bold border border-[#3a3a42]'
-                  : 'text-zinc-400 hover:text-white hover:bg-[#1f1f23]'
-              }`}
-            >
-              <div className="flex items-center space-x-2 truncate">
-                <Layers className="w-3.5 h-3.5 shrink-0 text-[#e6e8ec]" />
-                <span className="truncate">Tất cả mẫu dự án</span>
-              </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#1e1e22] text-zinc-300 font-mono">
-                {allTemplates.length}
-              </span>
-            </button>
-
-            {categories.map((cat) => {
-              const active = selectedCategory === cat.key;
-              const isFeatured = cat.key === 'VINCEAUTO_FEATURED';
-              return (
-                <button
-                  key={cat.key}
-                  onClick={() => {
-                    setSelectedCategory(cat.key);
-                    const firstInCat = allTemplates.find((t) => t.category === cat.key);
-                    if (firstInCat) setPreviewTemplate(firstInCat);
-                  }}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer ${
-                    active
-                      ? 'bg-[#28282d] text-[#e6e8ec] font-semibold border border-[#3a3a42]'
-                      : isFeatured
-                      ? 'bg-[#1f1f25] text-zinc-200 border border-[#32323a] hover:bg-[#26262e]'
-                      : 'text-zinc-400 hover:text-zinc-100 hover:bg-[#1f1f23]'
-                  }`}
-                  title={cat.nameVi}
-                >
-                  <div className="flex items-center space-x-2 truncate pr-2">
-                    {isFeatured ? (
-                      <Zap className="w-3.5 h-3.5 shrink-0 text-amber-400" />
-                    ) : (
-                      <FolderClosed
-                        className={`w-3.5 h-3.5 shrink-0 ${
-                          active ? 'text-[#e6e8ec]' : 'text-zinc-500'
-                        }`}
-                      />
-                    )}
-                    <span className="truncate text-left">{cat.nameVi}</span>
-                  </div>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[#1e1e22] text-zinc-300 font-mono shrink-0">
-                    {cat.count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Center Column: Templates List */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-2.5 bg-[#18181b] custom-scrollbar">
-            <div className="flex items-center justify-between px-1 pb-1">
-              <span className="text-xs font-semibold text-zinc-300">
-                Hiển thị <strong className="text-[#e6e8ec]">{filteredTemplates.length}</strong> mẫu bản vẽ đã tối ưu chuẩn VinceAuto
-              </span>
-              <span className="inline-flex items-center space-x-1 text-[10.5px] text-emerald-400 font-medium">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Tương thích 100% Node & Google Gemini Agent</span>
-              </span>
-            </div>
-
-            {filteredTemplates.map((tpl) => {
-              const isSelected = previewTemplate?.id === tpl.id;
-              return (
-                <div
-                  key={tpl.id}
-                  onClick={() => setPreviewTemplate(tpl)}
-                  className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-[#242429] border-zinc-400 shadow-lg'
-                      : 'bg-[#202024] border-[#2c2c31] hover:bg-[#232328] hover:border-[#3a3a42]'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center space-x-2">
-                        <Workflow className="w-4 h-4 text-[#e6e8ec] shrink-0" />
-                        <h4 className="text-[13px] font-bold text-[#e6e8ec] leading-snug">
-                          {tpl.titleVi}
-                        </h4>
+          {/* Center Grid: Clean, Spacious Cards */}
+          <div className="flex-1 overflow-y-auto p-4 bg-[#161619] custom-scrollbar">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+              {filteredTemplates.map((tpl) => {
+                const isSelected = previewTemplate?.id === tpl.id;
+                return (
+                  <div
+                    key={tpl.id}
+                    onClick={() => setPreviewTemplate(tpl)}
+                    className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-3 ${
+                      isSelected
+                        ? 'bg-[#222228] border-zinc-400 shadow-lg'
+                        : 'bg-[#1c1c21] border-[#292930] hover:bg-[#202026] hover:border-[#383842]'
+                    }`}
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#26262d] text-zinc-300 font-medium truncate">
+                          {tpl.departmentVi}
+                        </span>
+                        <span className="text-[10px] text-zinc-400 font-mono shrink-0">
+                          {tpl.nodesCount} bước
+                        </span>
                       </div>
-                      <p className="text-[11px] text-zinc-500 mt-0.5 truncate">
-                        {tpl.titleEn}
+
+                      <h4 className="text-[13px] font-bold text-[#f0f2f5] leading-snug line-clamp-2">
+                        {tpl.titleVi}
+                      </h4>
+
+                      <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed">
+                        {tpl.descriptionVi}
                       </p>
                     </div>
 
-                    <div className="flex items-center space-x-1.5 shrink-0">
-                      {tpl.isVinceOptimizedFeatured && (
-                        <span className="text-[9.5px] px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold">
-                          Chuẩn Dự Án
-                        </span>
-                      )}
-                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#2b2b31] text-zinc-300 font-medium">
-                        {tpl.departmentVi}
+                    <div className="flex items-center justify-between pt-2.5 border-t border-[#26262d]">
+                      <span className="inline-flex items-center space-x-1 text-[10.5px] text-emerald-400 font-medium">
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>Google Gemini</span>
                       </span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#18181b] border border-[#323238] text-[#e6e8ec] font-mono">
-                        {tpl.nodesCount} nodes
-                      </span>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleApplyTemplate(tpl);
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-[#e6e8ec] hover:bg-white text-zinc-900 font-bold text-[11px] flex items-center space-x-1 transition-all cursor-pointer"
+                      >
+                        <span>Dùng mẫu</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
-
-                  <p className="text-xs text-zinc-300 mt-2 line-clamp-2 leading-relaxed">
-                    {tpl.descriptionVi}
-                  </p>
-
-                  {/* Node chain preview */}
-                  <div className="mt-2.5 flex items-center justify-between gap-2 pt-2 border-t border-[#2a2a2f]">
-                    <div className="flex items-center flex-wrap gap-1 min-w-0">
-                      {tpl.nodeNames.slice(0, 4).map((nName, idx) => (
-                        <React.Fragment key={idx}>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#18181b] text-zinc-300 border border-[#2d2d33] truncate max-w-[140px]">
-                            {nName}
-                          </span>
-                          {idx < Math.min(tpl.nodeNames.length, 4) - 1 && (
-                            <span className="text-[10px] text-zinc-500">➔</span>
-                          )}
-                        </React.Fragment>
-                      ))}
-                      {tpl.nodeNames.length > 4 && (
-                        <span className="text-[10px] text-zinc-500">
-                          +{tpl.nodeNames.length - 4} bước
-                        </span>
-                      )}
-                    </div>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleApplyTemplate(tpl);
-                      }}
-                      className="px-2.5 py-1 rounded-lg bg-[#e6e8ec] hover:bg-white text-zinc-900 font-bold text-[11px] flex items-center space-x-1 shrink-0 shadow-sm transition-all cursor-pointer"
-                    >
-                      <span>Dùng mẫu này</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
 
-          {/* Right Column: Detailed Inspector of Selected Template */}
+          {/* Right Column: Clean Inspector */}
           {previewTemplate && (
-            <div className="w-[350px] border-l border-[#28282c] bg-[#141416] p-5 flex flex-col justify-between overflow-y-auto custom-scrollbar shrink-0">
+            <div className="w-[340px] border-l border-[#25252a] bg-[#131316] p-5 flex flex-col justify-between overflow-y-auto custom-scrollbar shrink-0">
               <div className="space-y-4">
                 <div>
-                  <span className="inline-block px-2.5 py-0.5 rounded-md bg-[#26262b] border border-[#383840] text-[10px] font-bold text-[#e6e8ec] uppercase mb-2">
-                    {previewTemplate.categoryVi}
+                  <span className="inline-block px-2 py-0.5 rounded-md bg-[#222228] border border-[#32323a] text-[10px] font-semibold text-zinc-300 mb-2">
+                    {previewTemplate.departmentVi}
                   </span>
-                  <h3 className="text-sm font-bold text-[#e6e8ec] leading-snug">
+                  <h3 className="text-sm font-bold text-[#f0f2f5] leading-snug">
                     {previewTemplate.titleVi}
                   </h3>
-                  <p className="text-[11px] text-zinc-500 mt-1 break-words">
-                    Nguồn: {previewTemplate.relativePath}
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-[#1c1c20] border border-[#2c2c32] space-y-2">
-                  <div className="flex items-center space-x-1.5 text-xs font-bold text-[#e6e8ec]">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Đã tối ưu hóa cho dự án VinceAuto</span>
-                  </div>
-                  <p className="text-xs text-zinc-300 leading-relaxed">
+                  <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
                     {previewTemplate.descriptionVi}
                   </p>
                 </div>
 
-                {/* All nodes in this template */}
+                {/* Prefilled Personalization Card */}
+                <div className="p-3 rounded-xl bg-[#1a1a1f] border border-[#2a2a32] space-y-1.5 text-[11px]">
+                  <div className="flex items-center space-x-1.5 font-semibold text-sky-300">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Thông tin đã nhập sẵn</span>
+                  </div>
+                  <div className="text-zinc-300">• AI: <span className="font-mono text-zinc-100">Google Gemini</span> ({GEMINI_DEFAULT_CONFIG.models})</div>
+                  <div className="text-zinc-300">• Telegram: <span className="font-mono text-zinc-100">@ungvinh0407</span> (ID: <span className="font-mono">1869249751</span>)</div>
+                </div>
+
+                {/* Vertical Flow Steps */}
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs font-bold text-zinc-300">
-                    <span>Cấu trúc các nút chuẩn ({previewTemplate.nodesCount} Nodes)</span>
-                    <span className="text-[10px] text-zinc-400 font-mono">
-                      {previewTemplate.connections.length} liên kết
+                  <div className="flex items-center justify-between text-xs font-semibold text-zinc-300">
+                    <span>Luồng xử lý ({previewTemplate.nodesCount} bước)</span>
+                    <span className="text-[10px] text-zinc-500 font-mono">
+                      {previewTemplate.connections.length} kết nối
                     </span>
                   </div>
 
-                  <div className="space-y-1.5 max-h-[280px] overflow-y-auto pr-1 custom-scrollbar">
+                  <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1 custom-scrollbar">
                     {previewTemplate.nodes.map((n, index) => (
                       <div
                         key={n.id || index}
-                        className="flex items-center space-x-2.5 p-2 rounded-lg bg-[#1c1c20] border border-[#2a2a30] text-xs"
+                        className="flex items-center space-x-2.5 p-2 rounded-lg bg-[#1a1a1f] border border-[#27272f] text-xs"
                       >
-                        <span className="w-5 h-5 rounded-full bg-[#2a2a30] text-[#e6e8ec] flex items-center justify-center text-[10px] font-bold shrink-0">
+                        <span className="w-5 h-5 rounded-full bg-[#272730] text-zinc-200 flex items-center justify-center text-[10px] font-bold shrink-0">
                           {index + 1}
                         </span>
                         <div className="min-w-0 flex-1">
                           <div className="text-zinc-200 font-medium truncate">{n.name}</div>
-                          <div className="text-[10px] text-sky-300 font-mono truncate">{n.type}</div>
+                          <div className="text-[10px] text-sky-400/90 font-mono truncate">{n.type}</div>
                         </div>
                       </div>
                     ))}
@@ -1259,13 +1260,13 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-[#26262a] mt-4">
+              <div className="pt-4 border-t border-[#25252a] mt-4">
                 <button
                   onClick={() => handleApplyTemplate(previewTemplate)}
-                  className="w-full py-3 px-4 rounded-xl bg-[#e6e8ec] hover:bg-white text-zinc-900 font-bold text-xs flex items-center justify-center space-x-2 shadow-lg transition-all cursor-pointer"
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#e6e8ec] hover:bg-white text-zinc-900 font-bold text-xs flex items-center justify-center space-x-2 shadow-lg transition-all cursor-pointer"
                 >
                   <Check className="w-4 h-4 stroke-[2.5]" />
-                  <span>Áp Dụng Mẫu Vào Bản Vẽ</span>
+                  <span>Áp Dụng Vào Bản Vẽ</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
