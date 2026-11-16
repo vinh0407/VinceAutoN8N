@@ -356,7 +356,7 @@ export class TelegramPollingManager {
 
     if (cmd === 'status' || cmd === 'trangthai') {
       const activeCount = workflows.filter((w) => w.active).length;
-      const recent = globalWorkflowStore.getExecutions(undefined, 3);
+      const recent = globalWorkflowStore.getHistory().slice(0, 3);
       const recentLines =
         recent.length > 0
           ? recent.map((e) => `• ${e.status === 'success' ? '✅' : '❌'} ${e.workflowName} (${e.durationMs}ms)`).join('\n')
@@ -384,7 +384,7 @@ export class TelegramPollingManager {
     if (cmd === 'on' || cmd === 'bat' || cmd === 'off' || cmd === 'tat') {
       const nextActive = cmd === 'on' || cmd === 'bat';
       globalWorkflowStore.saveWorkflow({ ...target, active: nextActive, updatedAt: new Date().toISOString() });
-      this.sync(globalWorkflowStore.getWorkflows());
+      this.refresh();
       await reply(`${nextActive ? '🟢 Đã BẬT' : '⚪ Đã TẮT'} workflow: "${target.name}".`);
       return true;
     }
