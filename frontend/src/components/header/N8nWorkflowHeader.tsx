@@ -10,9 +10,6 @@ import {
   Trash2,
   Download,
   Upload,
-  Clock,
-  History,
-  Database,
 } from 'lucide-react';
 import { IWorkflow } from '../../types';
 
@@ -125,41 +122,8 @@ export const N8nWorkflowHeader: React.FC<N8nWorkflowHeaderProps> = ({
         </div>
       </div>
 
-      {/* Right: Publish button & Test Workflow (Screenshot 3) */}
+      {/* Right: Publish button & Test Workflow */}
       <div className="flex items-center space-x-2">
-        {onOpenTasks && (
-          <button
-            onClick={onOpenTasks}
-            title="Quản lý lịch trình & Task lặp lại mỗi ngày"
-            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-[#1f1f22] hover:bg-[#28282c] border border-[#333338] text-xs font-semibold text-sky-300 hover:text-white transition-all cursor-pointer"
-          >
-            <Clock className="w-3.5 h-3.5 text-sky-400" />
-            <span className="hidden md:inline">Lên Task Hàng Ngày</span>
-          </button>
-        )}
-
-        {onOpenVersions && (
-          <button
-            onClick={onOpenVersions}
-            title="Lịch sử phiên bản & Rollback bản vẽ"
-            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-[#1f1f22] hover:bg-[#28282c] border border-[#333338] text-xs font-semibold text-zinc-300 hover:text-white transition-all cursor-pointer"
-          >
-            <History className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="hidden md:inline">Phiên bản</span>
-          </button>
-        )}
-
-        {onOpenTables && (
-          <button
-            onClick={onOpenTables}
-            title="Bảng dữ liệu nội bộ (Data Tables)"
-            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-[#1f1f22] hover:bg-[#28282c] border border-[#333338] text-xs font-semibold text-zinc-300 hover:text-white transition-all cursor-pointer"
-          >
-            <Database className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="hidden md:inline">Data Tables</span>
-          </button>
-        )}
-
         <button
           onClick={onSave}
           title="Save changes"
