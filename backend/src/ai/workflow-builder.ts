@@ -200,7 +200,7 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
 5. Trong tham số của các nút AI ("vince.modelRouter", "vince.agentManager", "ai.agent.*"), đặt provider="${activeProvider}", model="${activeModel}", baseUrl="${activeBaseUrl}".
 6. Với botchat Telegram: dùng chatId="{{ $json.chatId || $json.message.chat.id }}" và message="{{ $json.aiResponse || $json.text }}" để ai nhắn bot cũng tự trả lời đúng người đó (TUYỆT ĐỐI không hardcode chatId cố định).
 7. Sắp xếp tọa độ position [X, Y] từ trái sang phải cách đều 300px (nhánh song song đặt cách nhau 180px theo trục Y).
-8. Với quy trình tải video/nội dung từ link (Facebook/TikTok/YouTube) rồi đăng lại lên Trang/Kênh chỉ định: luôn đi theo luồng logic Trigger (Form/Webhook/Manual) -> HTTP Request (Tải thông tin & file video) -> Edit Fields (Chuẩn hóa URL video & metadata) -> AI Agent (Viết caption/hashtags thu hút) -> Hành động đích (Facebook Video: "vince.facebook.video" hoặc YouTube/TikTok).
+8. Với quy trình tải video/nội dung từ link đa nền tảng (Facebook, TikTok, YouTube, Instagram...) rồi đăng lại lên Trang/Kênh chỉ định: luôn dùng Google Sheets để lưu/đọc danh sách link bài viết & trạng thái đăng, kết hợp Google Drive để lưu trữ file video đã tải về: Trigger (Schedule/Form/Webhook) -> Google Sheets (Đọc link nguồn) -> HTTP Request (Tải video) -> Google Drive (Lưu video) -> AI Agent (Viết caption/hashtags) -> Hành động đích (Facebook Video: "vince.facebook.video" / YouTube / TikTok) + Google Sheets (Cập nhật trạng thái).
 9. Trả về KẾT QUẢ DUY NHẤT dưới dạng JSON hợp lệ (không kèm văn bản ngoài JSON):
 {
   "summary": "Tóm tắt quy trình tự động hóa",
