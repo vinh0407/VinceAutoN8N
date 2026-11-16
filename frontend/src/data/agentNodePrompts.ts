@@ -505,18 +505,46 @@ export const PREBUILT_AGENT_WORKFLOW_PROMPTS: IPrebuiltWorkflowPrompt[] = [
       '/build Lên lịch tự động mỗi ngày, dùng AI Agent Opencode2 (crouton-alpha-free) sáng tạo kịch bản, caption và hashtag xu hướng, đăng đồng loạt lên TikTok: Publish Direct Video, Threads: Publish Text Post, Instagram: Publish Reel và YouTube Shorts, lưu lịch đăng vào Google Sheets và báo về Telegram',
   },
   {
-    id: 'wf_prompt_chatbot_telegram_zalo',
-    title: '0. Chatbot AI 2 Chiều với Telegram & Zalo OA (Ai nhắn cũng tự trả lời)',
-    category: 'Chatbot AI • Telegram / Zalo',
+    id: 'wf_prompt_chatbot_telegram',
+    title: '0A. Chatbot AI Telegram (Ai nhắn tin tới Bot cũng tự động trả lời)',
+    category: 'Chatbot AI • Telegram',
     nodesCount: 4,
     nodeNames: [
       'Telegram Trigger (Message)',
-      'Edit Fields (Chuẩn hóa Chat ID & Câu hỏi)',
+      'Edit Fields (Chuẩn hóa Câu hỏi & Chat ID)',
       'AI Agent (Tùy chọn API / Model)',
-      'Telegram & Zalo OA: Phản hồi 2 chiều',
+      'Telegram: Send Message (Reply người gửi)',
     ],
     prompt:
-      '/build Tạo chatbot AI 2 chiều nhận tin nhắn từ bất kỳ người dùng nào trên Telegram hoặc Zalo, chuẩn hóa câu hỏi và chatId bằng Edit Fields, gọi API AI Agent trả lời khách quan và tự động reply lại đúng người gửi qua Telegram & Zalo OA',
+      '/build Tạo chatbot AI 2 chiều cho Telegram: nhận tin nhắn từ bất kỳ người dùng nào qua Telegram Trigger, chuẩn hóa câu hỏi và chatId bằng Edit Fields, gọi API AI Agent để trả lời và tự động reply lại đúng người gửi trên Telegram',
+  },
+  {
+    id: 'wf_prompt_chatbot_zalo',
+    title: '0B. Chatbot AI Zalo OA (Tự động tư vấn & phản hồi tin nhắn khách hàng)',
+    category: 'Chatbot AI • Zalo OA',
+    nodesCount: 4,
+    nodeNames: [
+      'Chat / Zalo Trigger (Tin nhắn mới)',
+      'Edit Fields (Chuẩn hóa SĐT & Nội dung)',
+      'AI Agent (Tùy chọn API / Model)',
+      'Zalo OA: Send Message / ZNS',
+    ],
+    prompt:
+      '/build Tạo chatbot AI 2 chiều cho Zalo OA: lắng nghe tin nhắn khách hàng, chuẩn hóa dữ liệu bằng Edit Fields, gọi API AI Agent tư vấn tự động và phản hồi lại khách hàng qua Zalo OA',
+  },
+  {
+    id: 'wf_prompt_chatbot_social',
+    title: '0C. Chatbot AI Mạng xã hội (Messenger / Instagram / Threads / TikTok)',
+    category: 'Chatbot AI • Messenger / Threads / TikTok / IG',
+    nodesCount: 5,
+    nodeNames: [
+      'Social Media Trigger (Messenger / IG / Threads / TikTok)',
+      'Filter (Lọc bình luận & tin nhắn hợp lệ)',
+      'AI Agent (Soạn câu trả lời thông minh)',
+      'Messenger / Instagram / Threads / TikTok: Reply',
+    ],
+    prompt:
+      '/build Tạo chatbot AI tự động trả lời bình luận và tin nhắn DM trên Messenger, Instagram, Threads và TikTok: nhận sự kiện từ Social Media Trigger, lọc spam bằng Filter, gọi AI Agent soạn phản hồi và tự động reply trên nền tảng tương ứng',
   },
   {
     id: 'wf_prompt_ecom_shopee',

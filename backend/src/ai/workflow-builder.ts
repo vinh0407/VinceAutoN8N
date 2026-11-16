@@ -1333,12 +1333,8 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
     }
 
     // Default or explicitly requested Telegram notification / AI bot reply at the end
-    if (
-      p.includes('telegram') ||
-      p.includes('thông báo') ||
-      p.includes('báo cáo') ||
-      (!p.includes('zalo') && !p.includes('gmail') && !p.includes('slack') && !p.includes('discord'))
-    ) {
+    const hasAnyDestination = nodes.length > aiNodeIndex + 1;
+    if (p.includes('telegram') || p.includes('tele') || !hasAnyDestination) {
       const isTelegramChat = p.includes('telegram') || p.includes('tele') || p.includes('botchat');
       nodes.push({
         id: 'node_telegram_notify',
