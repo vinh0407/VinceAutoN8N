@@ -926,6 +926,22 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
         },
       };
       steps.push('Nhận IPN Webhook giao dịch thanh toán thành công theo thời gian thực (trigger.payment)');
+    } else if (
+      (p.includes('tải video') || p.includes('link') || p.includes('download') || p.includes('reup')) &&
+      !p.includes('lịch') &&
+      !p.includes('mỗi ngày')
+    ) {
+      triggerNode = {
+        id: 'node_trigger_form',
+        name: 'Form Trigger: Nhập Link Video & Trang đích [T/W]',
+        type: 'trigger.form',
+        position: nextPos(),
+        parameters: {
+          formTitle: 'Tải Video & Đăng lên Trang chỉ định',
+          fields: 'videoLink,targetPageId,customCaption',
+        },
+      };
+      steps.push('Nhận đường link video nguồn và ID trang Facebook đích từ người dùng (trigger.form)');
     } else if (p.includes('form') || p.includes('biểu mẫu') || p.includes('đăng ký')) {
       triggerNode = {
         id: 'node_trigger_form',
@@ -991,7 +1007,25 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
     }
     nodes.push(triggerNode);
 
-    // 2. DATA INGESTION / SCRAPING / E-COMMERCE / DATABASE FETCH
+    // 2. DATA INGESTION / VIDEO DOWNLOAD / SCRAPING / E-COMMERCE
+    if (p.includes('tải video') || p.includes('download video') || p.includes('link facebook') || p.includes('reup')) {
+      nodes.push({
+        id: 'node_video_download',
+        name: 'HTTP Request: Tải Video từ Link Facebook',
+        type: 'automation.http',
+        position: nextPos(),
+        parameters: {
+          method: 'POST',
+          url: 'https://api.example.com/v1/facebook/extract-video',
+          body: {
+            sourceUrl: '{{ $json.videoLink || $json.url }}',
+            quality: 'hd',
+          },
+        },
+      });
+      steps.push('Gọi API trích xuất & tải luồng video HD (.mp4) từ link Facebook nguồn (automation.http)');
+    }
+
     if (p.includes('cào') || p.includes('scrape') || p.includes('tin tức') || p.includes('web') || p.includes('hacker news')) {
       nodes.push({
         id: 'node_scraper',
@@ -1142,7 +1176,7 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
       steps.push('Ghi nhận dữ liệu đã qua AI xử lý vào bảng tính Google Sheets (vince.googleSheets.appendRow)');
     }
 
-    if (p.includes('drive') || p.includes('lưu file') || p.includes('upload')) {
+    if (p.includes('drive') || p.includes('google drive') || p.includes('lưu file lên drive')) {
       nodes.push({
         id: 'node_google_drive',
         name: 'Google Drive: Upload File',
@@ -1263,18 +1297,32 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
     }
 
     if (p.includes('facebook') || p.includes('fanpage')) {
+      const isVideoUpload = p.includes('video') || p.includes('reel');
       nodes.push({
         id: 'node_facebook_post',
-        name: 'Facebook Graph: Publish Page Post',
+        name: isVideoUpload ? 'Facebook Graph: Upload & Publish Video' : 'Facebook Graph: Publish Page Post',
         type: 'vince.facebook.postFeed',
         position: nextPos(),
-        parameters: {
-          resource: 'Post',
-          operation: 'create',
-          pageId: 'me',
-        },
+        parameters: isVideoUpload
+          ? {
+              resource: 'Video',
+              operation: 'publish',
+              pageId: '{{ $json.targetPageId || "YOUR_PAGE_ID" }}',
+              fileUrl: '{{ $json.videoUrl || $json.downloadUrl || $json.url }}',
+              description: '{{ $json.aiResponse || $json.text || $json.customCaption }}',
+            }
+          : {
+              resource: 'Post',
+              operation: 'create',
+              pageId: '{{ $json.targetPageId || "me" }}',
+              message: '{{ $json.aiResponse || $json.text }}',
+            },
       });
-      steps.push('Đăng bài viết tự động lên Facebook Fanpage (vince.facebook.postFeed)');
+      steps.push(
+        isVideoUpload
+          ? 'Upload và xuất bản Video lên đúng Facebook Fanpage chỉ định (vince.facebook.postFeed)'
+          : 'Đăng bài viết tự động lên Facebook Fanpage (vince.facebook.postFeed)'
+      );
     }
 
     if (p.includes('zalo') || p.includes('zns')) {
