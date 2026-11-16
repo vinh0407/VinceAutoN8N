@@ -61,7 +61,9 @@ export class VinceTelegramNode implements INodeType {
     const siblingToken = context.workflow?.nodes?.find(
       (n) =>
         n.id !== node.id &&
-        n.type?.toLowerCase().includes('telegram') &&
+        (n.type?.toLowerCase().includes('telegram') ||
+          n.name?.toLowerCase().includes('telegram') ||
+          String(n.parameters?.app || '').toLowerCase().includes('telegram')) &&
         typeof n.parameters?.botToken === 'string' &&
         n.parameters.botToken.trim() &&
         !n.parameters.botToken.includes('{{')
