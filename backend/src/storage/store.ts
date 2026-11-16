@@ -301,6 +301,19 @@ export class WorkflowStore {
     workflow.updatedAt = new Date().toISOString();
     if (!workflow.createdAt) workflow.createdAt = workflow.updatedAt;
 
+    // Ensure the parent project always exists in projects.json so workflows never become orphaned
+    const projId = workflow.projectId || this.getProjects()[0]?.id || 'proj_default';
+    if (!this.projects.has(projId)) {
+      this.saveProject({
+        id: projId,
+        name: 'Dự án Tự động hóa',
+        description: 'Dự án tự động hóa VinceAuto',
+        createdAt: workflow.createdAt,
+        updatedAt: workflow.updatedAt,
+      });
+    }
+    workflow.projectId = projId;
+
     this.workflows.set(workflow.id, workflow);
     this.saveWorkflows();
 

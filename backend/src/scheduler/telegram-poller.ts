@@ -50,6 +50,14 @@ function resolveBotToken(wf: IWorkflow, trigger: INode): string {
 
 export class TelegramPollingManager {
   private pollers: Map<string, PollerState> = new Map();
+  private recentEvents: string[] = [];
+
+  private record(msg: string) {
+    const line = `[${new Date().toISOString()}] ${msg}`;
+    this.recentEvents.unshift(line);
+    if (this.recentEvents.length > 20) this.recentEvents.length = 20;
+    console.log(msg);
+  }
 
   start() {
     this.refresh();
@@ -101,6 +109,7 @@ export class TelegramPollingManager {
       botId: p.token.split(':')[0],
       workflowIds: p.workflowIds,
       running: p.running,
+      recentEvents: this.recentEvents.slice(0, 10),
     }));
   }
 
@@ -190,9 +199,9 @@ export class TelegramPollingManager {
           credentials: globalWorkflowStore.getCredentials(),
         });
         globalWorkflowStore.addExecution(summary);
-        console.log(`[TelegramPoller] "${wf.name}" handled message from chat ${payload.chatId}: ${summary.status}`);
+        this.record(`[TelegramPoller] "${wf.name}" handled message from chat ${payload.chatId}: ${summary.status}${summary.error ? ' (' + summary.error + ')' : ''}`);
       } catch (err: any) {
-        console.error(`[TelegramPoller] Workflow "${wf.name}" failed:`, err.message);
+        this.record(`[TelegramPoller] Workflow "${wf.name}" failed: ${err.message}`);
       }
     }
   }
