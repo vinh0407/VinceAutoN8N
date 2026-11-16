@@ -11,7 +11,7 @@ export class GeminiProvider implements IAIProvider {
   async chat(messages: ILLMMessage[], options?: ILLMOptions): Promise<ILLMResponse> {
     const startTime = Date.now();
     const apiKey = options?.apiKey || process.env.GEMINI_API_KEY;
-    const model = options?.model || 'gemini-2.5-flash';
+    const model = options?.model || 'gemini-flash-latest';
 
     if (!apiKey) {
       return {
