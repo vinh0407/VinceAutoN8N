@@ -200,7 +200,7 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
 5. Trong tham số của các nút AI ("vince.modelRouter", "vince.agentManager", "ai.agent.*"), đặt provider="${activeProvider}", model="${activeModel}", baseUrl="${activeBaseUrl}".
 6. Với botchat Telegram: dùng chatId="{{ $json.chatId || $json.message.chat.id }}" và message="{{ $json.aiResponse || $json.text }}" để ai nhắn bot cũng tự trả lời đúng người đó (TUYỆT ĐỐI không hardcode chatId cố định).
 7. Sắp xếp tọa độ position [X, Y] từ trái sang phải cách đều 300px (nhánh song song đặt cách nhau 180px theo trục Y).
-8. Với quy trình tải video/nội dung từ link đa nền tảng (Facebook, TikTok, YouTube, Instagram...) rồi đăng lại lên Trang/Kênh chỉ định: luôn dùng Google Sheets để lưu/đọc danh sách link bài viết & trạng thái đăng, kết hợp Google Drive để lưu trữ file video đã tải về: Trigger (Schedule/Form/Webhook) -> Google Sheets (Đọc link nguồn) -> HTTP Request (Tải video) -> Google Drive (Lưu video) -> AI Agent (Viết caption/hashtags) -> Hành động đích (Facebook Video: "vince.facebook.video" / YouTube / TikTok) + Google Sheets (Cập nhật trạng thái).
+8. Với quy trình tải video/nội dung từ link đa nền tảng (Facebook, TikTok, YouTube, Instagram...) rồi đăng lại lên Trang/Kênh chỉ định: luôn dùng Google Sheets để lưu/đọc danh sách link bài viết & trạng thái đăng, kết hợp Google Drive để lưu trữ file video đã tải về, và có thể chèn nút Hẹn Giờ Đăng ("flow.wait") trước bước đăng nếu cần hẹn giờ: Trigger (Google Sheets/Form/Webhook) -> HTTP Request (Tải video) -> Google Drive (Lưu video) -> AI Agent (Viết caption/hashtags) -> [Hẹn Giờ Đăng "flow.wait" nếu có hẹn giờ] -> Hành động đích (Facebook Video: "vince.facebook.video" / YouTube / TikTok) + Google Sheets (Cập nhật trạng thái).
 9. Trả về KẾT QUẢ DUY NHẤT dưới dạng JSON hợp lệ (không kèm văn bản ngoài JSON):
 {
   "summary": "Tóm tắt quy trình tự động hóa",
@@ -1219,6 +1219,21 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
     }
     const aiNodeIndex = nodes.length - 1;
 
+    if (p.includes('hẹn giờ') || p.includes('lên lịch đăng') || p.includes('đăng theo giờ') || p.includes('chờ') || p.includes('wait') || p.includes('delay')) {
+      nodes.push({
+        id: 'node_flow_wait',
+        name: 'Hẹn Giờ Đăng (Wait)',
+        type: 'flow.wait',
+        position: nextPos(),
+        parameters: {
+          mode: 'specificTime',
+          scheduleTime: '{{ $json.scheduleTime || "" }}',
+          delayMinutes: 0,
+        },
+      });
+      steps.push('Chờ đến thời điểm hẹn giờ đăng bài đã thiết lập (flow.wait)');
+    }
+
     // 5. DESTINATION / APP ACTIONS (Google Sheets, Drive, Gmail, CRM, Database, Payment, Telegram, Zalo, Slack, Discord)
     if (p.includes('sheet') || p.includes('trang tính') || p.includes('báo cáo') || p.includes('lưu') || p.includes('đơn hàng') || p.includes('lead')) {
       nodes.push({
@@ -1473,23 +1488,25 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
       steps.push(isTelegramChat ? 'Tự động gọi API Telegram để phản hồi trực tiếp câu trả lời của AI Agent về @id của người gửi' : 'Gửi thông báo kết quả tức thời về Telegram Bot (vince.telegram)');
     }
 
-    // Wire sequential connections up to AI node, then fan-out parallel destination branches cleanly
-    for (let i = 0; i < aiNodeIndex; i++) {
+    // Wire sequential connections up to AI node (and optional Wait node), then fan-out parallel destination branches cleanly
+    const waitIdx = nodes.findIndex((n) => n.id === 'node_flow_wait');
+    const fanOutIndex = waitIdx !== -1 ? waitIdx : aiNodeIndex;
+    for (let i = 0; i < fanOutIndex; i++) {
       connections.push({
         source: nodes[i].id,
         target: nodes[i + 1].id,
       });
     }
 
-    const destNodes = nodes.slice(aiNodeIndex + 1);
+    const destNodes = nodes.slice(fanOutIndex + 1);
     if (destNodes.length === 1) {
-      connections.push({ source: nodes[aiNodeIndex].id, target: destNodes[0].id });
+      connections.push({ source: nodes[fanOutIndex].id, target: destNodes[0].id });
     } else if (destNodes.length > 1) {
-      const destX = nodes[aiNodeIndex].position[0] + 320;
+      const destX = nodes[fanOutIndex].position[0] + 320;
       const startY = Math.max(80, 260 - Math.floor(((destNodes.length - 1) * 160) / 2));
       destNodes.forEach((dn, idx) => {
         dn.position = [destX, startY + idx * 160];
-        connections.push({ source: nodes[aiNodeIndex].id, target: dn.id });
+        connections.push({ source: nodes[fanOutIndex].id, target: dn.id });
       });
     }
 

@@ -17,6 +17,7 @@ import {
 import { AutomationHttpNode } from './automation-http.node.js';
 import { AutomationCodeNode } from './automation-code.node.js';
 import { AutomationFilterNode } from './automation-filter.node.js';
+import { FlowWaitNode } from './flow-wait.node.js';
 import { VinceModelRouterNode } from './vince-model-router.node.js';
 import { VinceAgentManagerNode } from './vince-agent-manager.node.js';
 import { VinceScraperNode } from './vince-scraper.node.js';
@@ -87,6 +88,7 @@ export class NodeRegistry {
     this.register(new AutomationHttpNode());
     this.register(new AutomationCodeNode());
     this.register(new AutomationFilterNode());
+    this.register(new FlowWaitNode());
     this.register(new VinceModelRouterNode());
     this.register(new VinceAgentManagerNode());
     this.register(new VinceScraperNode());
