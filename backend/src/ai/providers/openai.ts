@@ -69,6 +69,8 @@ export class OpenAIProvider implements IAIProvider {
       const choice = res.data?.choices?.[0];
       const text =
         choice?.message?.content ||
+        choice?.message?.reasoning ||
+        choice?.message?.reasoning_content ||
         choice?.text ||
         (typeof res.data?.content === 'string' ? res.data.content : '');
       const usage = res.data?.usage;

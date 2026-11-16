@@ -79,14 +79,23 @@ export class VinceTelegramNode implements INodeType {
       const item = items[i];
       let chatId = ExpressionEvaluator.evaluate(node.parameters.chatId, item, context, i);
       if (typeof chatId === 'string') chatId = chatId.trim();
-      if (!chatId || chatId === '@chatid' || chatId === '{{ $json.chatId }}' || chatId.includes('$json.chatId')) {
+      if (!chatId || chatId === '@chatid' || (typeof chatId === 'string' && chatId.includes('$json.chatId'))) {
         chatId = item.json.chatId || item.json.message?.chat?.id || item.json.message?.from?.id;
       }
 
       let message = ExpressionEvaluator.evaluate(node.parameters.message, item, context, i);
       if (typeof message === 'string') message = message.trim();
-      if (!message || message === '{{ $json.aiResponse }}' || message.includes('$json.aiResponse') || message.includes('Workflow hoàn thành thành công!') || message.includes('Kết quả: {{ JSON.stringify')) {
+      if (
+        !message ||
+        (typeof message === 'string' &&
+          (message.includes('$json.aiResponse') ||
+            message.includes('Workflow hoàn thành thành công!') ||
+            message.includes('Kết quả: {{ JSON.stringify')))
+      ) {
         message = item.json.aiResponse || item.json.response || item.json.text || message || 'Xin chào! Cảm ơn bạn đã nhắn tin cho bot.';
+      }
+      if (typeof message !== 'string') {
+        message = typeof message === 'object' ? JSON.stringify(message) : String(message);
       }
 
       const replyToMessageId =
