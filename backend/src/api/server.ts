@@ -85,16 +85,19 @@ export function createServer() {
       return res.status(400).json({ success: false, error: 'Project name is required' });
     }
     const saved = globalWorkflowStore.saveProject(project);
+    void globalCloudBackup.push();
     res.json({ success: true, project: saved });
   });
 
   app.post('/api/projects/delete-samples', (req, res) => {
     const result = globalWorkflowStore.deleteSampleProjects();
+    void globalCloudBackup.push();
     res.json({ success: true, ...result });
   });
 
   app.delete('/api/projects/:id', (req, res) => {
     const ok = globalWorkflowStore.deleteProject(req.params.id);
+    if (ok) void globalCloudBackup.push();
     res.json({ success: ok });
   });
 

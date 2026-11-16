@@ -73,8 +73,38 @@ export function App() {
   >('root');
   const [pendingSourceNodeId, setPendingSourceNodeId] = useState<string | null>(null);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
-  const [chatHistory, setChatHistory] = useState<IAIChatHistoryItem[]>(DEFAULT_CHAT_HISTORY);
-  const [agentProjectLogs, setAgentProjectLogs] = useState<IAIAgentProjectLog[]>(DEFAULT_AGENT_PROJECT_LOGS);
+  const [chatHistory, setChatHistory] = useState<IAIChatHistoryItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('vinceauto:chatHistory');
+      return saved ? JSON.parse(saved) : DEFAULT_CHAT_HISTORY;
+    } catch {
+      return DEFAULT_CHAT_HISTORY;
+    }
+  });
+  const [agentProjectLogs, setAgentProjectLogs] = useState<IAIAgentProjectLog[]>(() => {
+    try {
+      const saved = localStorage.getItem('vinceauto:agentProjectLogs');
+      return saved ? JSON.parse(saved) : DEFAULT_AGENT_PROJECT_LOGS;
+    } catch {
+      return DEFAULT_AGENT_PROJECT_LOGS;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('vinceauto:chatHistory', JSON.stringify(chatHistory.slice(0, 50)));
+    } catch {
+      // ignore quota errors
+    }
+  }, [chatHistory]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('vinceauto:agentProjectLogs', JSON.stringify(agentProjectLogs.slice(0, 50)));
+    } catch {
+      // ignore quota errors
+    }
+  }, [agentProjectLogs]);
   const [selectedChatItem, setSelectedChatItem] = useState<IAIChatHistoryItem | null>(null);
   const [selectedAgentLog, setSelectedAgentLog] = useState<IAIAgentProjectLog | null>(null);
   const [showCredentials, setShowCredentials] = useState(false);
@@ -98,11 +128,19 @@ export function App() {
     []
   );
 
-  const refreshProjects = async () => {
+  const refreshProjects = async (allowEmptyOverwrite = false) => {
     try {
       const res = await axios.get('/api/projects');
       if (res.data?.success) {
-        setProjects(res.data.projects || []);
+        const list: IProject[] = res.data.projects || [];
+        setProjects(list);
+        if (list.length > 0 || allowEmptyOverwrite) {
+          try {
+            localStorage.setItem('vinceauto:projects_backup', JSON.stringify(list));
+          } catch {
+            // ignore
+          }
+        }
       }
     } catch (err) {
       console.error('Failed to refresh projects', err);
@@ -118,9 +156,35 @@ export function App() {
     const initProjects = async () => {
       try {
         const res = await axios.get('/api/projects');
-        if (res.data?.success && res.data.projects?.length > 0) {
-          const projs: IProject[] = res.data.projects;
+        let projs: IProject[] = res.data?.success ? res.data.projects || [] : [];
+
+        // If backend was wiped (e.g. Render Free restart without GitHub Gist), auto-restore from browser backup
+        if (projs.length === 0) {
+          try {
+            const rawBackup = localStorage.getItem('vinceauto:projects_backup');
+            const backup: IProject[] = rawBackup ? JSON.parse(rawBackup) : [];
+            if (Array.isArray(backup) && backup.length > 0) {
+              for (const proj of backup) {
+                await axios.post('/api/projects', { id: proj.id, name: proj.name, description: proj.description });
+                for (const wf of proj.workflows || []) {
+                  await axios.post('/api/workflows', wf);
+                }
+              }
+              const restored = await axios.get('/api/projects');
+              if (restored.data?.success) projs = restored.data.projects || [];
+            }
+          } catch (restoreErr) {
+            console.warn('Auto-restore from browser backup notice:', restoreErr);
+          }
+        }
+
+        if (projs.length > 0) {
           setProjects(projs);
+          try {
+            localStorage.setItem('vinceauto:projects_backup', JSON.stringify(projs));
+          } catch {
+            // ignore
+          }
           const firstProj = projs[0];
           setSelectedProjectId(firstProj.id);
 
@@ -785,7 +849,7 @@ export function App() {
   const handleDeleteWorkflow = async (workflowId: string) => {
     try {
       await axios.delete(`/api/workflows/${workflowId}`);
-      await refreshProjects();
+      await refreshProjects(true);
       if (currentWorkflow?.id === workflowId) {
         const remainingWfs = projects.flatMap((p) => p.workflows || []).filter((w) => w.id !== workflowId);
         if (remainingWfs.length > 0) {
@@ -806,6 +870,11 @@ export function App() {
         const resProjs = await axios.get('/api/projects');
         const updatedProjects: IProject[] = resProjs.data?.projects || [];
         setProjects(updatedProjects);
+        try {
+          localStorage.setItem('vinceauto:projects_backup', JSON.stringify(updatedProjects));
+        } catch {
+          // ignore
+        }
 
         if (selectedProjectId === projectId) {
           if (updatedProjects.length > 0) {
@@ -836,6 +905,11 @@ export function App() {
         const resProjs = await axios.get('/api/projects');
         const updatedProjects: IProject[] = resProjs.data?.projects || [];
         setProjects(updatedProjects);
+        try {
+          localStorage.setItem('vinceauto:projects_backup', JSON.stringify(updatedProjects));
+        } catch {
+          // ignore
+        }
 
         if (updatedProjects.length > 0) {
           const nextProj = updatedProjects[0];
