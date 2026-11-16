@@ -50,6 +50,79 @@ interface NodeDetailsViewProps {
   onClose: () => void;
 }
 
+// Helper to parse CSV of AI Providers & Models:
+// Columns: "Tên Provider","Loại Provider","Base URL","API Key","Danh Sách Models","Trạng Thái","Ngày Tạo"
+export interface ICsvProviderPreset {
+  id: string;
+  name: string;
+  badge: string;
+  baseUrl: string;
+  apiKey?: string;
+  defaultModel: string;
+  models: { name: string; value: string }[];
+  placeholderKey: string;
+  isCsv?: boolean;
+}
+
+function parseCsvLine(line: string): string[] {
+  const out: string[] = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === ',' && !inQuotes) {
+      out.push(cur.trim());
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  out.push(cur.trim());
+  return out;
+}
+
+function parseProvidersCsv(csvText: string): ICsvProviderPreset[] {
+  const lines = csvText
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const results: ICsvProviderPreset[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const cols = parseCsvLine(lines[i]);
+    if (cols.length < 5) continue;
+    // Skip header row
+    if (cols[0].toLowerCase().includes('tên provider') || cols[2].toLowerCase() === 'base url') continue;
+    const [name, providerType, baseUrl, apiKey, modelsRaw, status] = cols;
+    if (!name || !baseUrl) continue;
+    if (status && status.toLowerCase().includes('tắt')) continue;
+    const modelList = (modelsRaw || '')
+      .split(/[;|\n]/)
+      .map((m) => m.trim())
+      .filter(Boolean);
+    const defaultModel = modelList[0] || 'gpt-4o-mini';
+    const id = `csv_${name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`;
+    results.push({
+      id,
+      name,
+      badge: `CSV • ${modelList.length} models`,
+      baseUrl: baseUrl.trim(),
+      apiKey: apiKey ? apiKey.trim() : undefined,
+      defaultModel,
+      models: modelList.map((m) => ({ name: m, value: m })),
+      placeholderKey: apiKey ? 'Đã nạp từ CSV' : `Nhập API Key (${providerType || 'openai'})...`,
+      isCsv: true,
+    });
+  }
+  return results;
+}
+
 // Helper to recursively strip internal metadata keys starting with underscore
 function sanitizeJsonForDisplay(obj: any): any {
   if (!obj || typeof obj !== 'object') return obj;
@@ -355,6 +428,19 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
   const [isCustomModelMode, setIsCustomModelMode] = useState<boolean>(
     Boolean(parameters.customModel || parameters.model === 'custom')
   );
+  const [csvProviders, setCsvProviders] = useState<ICsvProviderPreset[]>(() => {
+    try {
+      const raw = localStorage.getItem('vinceauto:csv_ai_providers');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [showCsvPaste, setShowCsvPaste] = useState(false);
+  const [csvPasteText, setCsvPasteText] = useState('');
+  const [csvImportMsg, setCsvImportMsg] = useState<string | null>(null);
+  const csvFileInputRef = useRef<HTMLInputElement | null>(null);
+  const allProviderPresets = [...csvProviders, ...AI_PROVIDERS_PRESETS];
   useEffect(() => {
     setIsCustomModelMode(Boolean(parameters.customModel || parameters.model === 'custom'));
   }, [node?.id]);
@@ -619,14 +705,58 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
     }
   };
 
+  const applyCsvText = (rawCsv: string) => {
+    const parsed = parseProvidersCsv(rawCsv);
+    if (parsed.length === 0) {
+      setCsvImportMsg('Không tìm thấy dòng provider hợp lệ trong CSV.');
+      return;
+    }
+    setCsvProviders(parsed);
+    try {
+      localStorage.setItem('vinceauto:csv_ai_providers', JSON.stringify(parsed));
+    } catch {
+      // ignore
+    }
+    const first = parsed[0];
+    setIsCustomModelMode(false);
+    onUpdateParameters(node.id, {
+      ...parameters,
+      provider: first.id,
+      baseUrl: first.baseUrl,
+      model: first.defaultModel,
+      customModel: '',
+      ...(first.apiKey ? { apiKey: first.apiKey } : {}),
+      fallbackProviders: parsed.map((p) => ({
+        name: p.name,
+        baseUrl: p.baseUrl,
+        apiKey: p.apiKey || '',
+        defaultModel: p.defaultModel,
+      })),
+    });
+    setCsvImportMsg(`✓ Đã nạp ${parsed.length} Provider & ${parsed.reduce((a, b) => a + b.models.length, 0)} Models từ CSV!`);
+    setShowCsvPaste(false);
+  };
+
   const handleSelectAiProvider = (providerId: string) => {
-    const preset = AI_PROVIDERS_PRESETS.find((p) => p.id === providerId);
+    const preset: any = allProviderPresets.find((p) => p.id === providerId);
     if (!preset) return;
     const nextParams: Record<string, any> = {
       ...parameters,
       provider: preset.id,
       baseUrl: preset.baseUrl,
       model: preset.defaultModel,
+      customModel: '',
+      ...(preset.apiKey ? { apiKey: preset.apiKey } : {}),
+      ...(csvProviders.length > 0
+        ? {
+            fallbackProviders: csvProviders.map((p) => ({
+              name: p.name,
+              baseUrl: p.baseUrl,
+              apiKey: p.apiKey || '',
+              defaultModel: p.defaultModel,
+            })),
+          }
+        : {}),
     };
     if (preset.id === 'custom') {
       setIsCustomModelMode(true);
@@ -1552,16 +1682,76 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                         </div>
                       </div>
 
+                      {/* 0. CSV Import Bar (Auto-populate Providers, API Keys & Models from .csv) */}
+                      <div className="p-2.5 rounded-lg bg-[#0f1720] border border-[#22394e] space-y-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-[11px] font-medium text-sky-300">
+                            Nhập sẵn Provider & Model từ file CSV (chỉ cần chọn, không cần gõ tay):
+                          </span>
+                          <div className="flex items-center space-x-1.5">
+                            <input
+                              ref={csvFileInputRef}
+                              type="file"
+                              accept=".csv,.txt"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const reader = new FileReader();
+                                reader.onload = () => applyCsvText(String(reader.result || ''));
+                                reader.readAsText(file, 'utf-8');
+                                e.target.value = '';
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => csvFileInputRef.current?.click()}
+                              className="px-2.5 py-1 rounded bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-sky-200 text-[11px] font-semibold cursor-pointer"
+                            >
+                              + Chọn file .CSV
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setShowCsvPaste(!showCsvPaste)}
+                              className="px-2.5 py-1 rounded bg-[#18222e] hover:bg-[#223042] border border-[#2d3e52] text-zinc-200 text-[11px] cursor-pointer"
+                            >
+                              {showCsvPaste ? 'Đóng' : 'Dán CSV'}
+                            </button>
+                          </div>
+                        </div>
+                        {showCsvPaste && (
+                          <div className="space-y-1.5">
+                            <textarea
+                              rows={4}
+                              value={csvPasteText}
+                              onChange={(e) => setCsvPasteText(e.target.value)}
+                              placeholder={'"Tên Provider","Loại Provider","Base URL","API Key","Danh Sách Models","Trạng Thái","Ngày Tạo"\n"Kilo Gateway","openai-compatible","https://ai-gateway.kilo.ai/api/v1","...","kilo-auto/free; ...","Kích hoạt","..."'}
+                              className="w-full bg-[#0a0f14] border border-[#26384d] rounded p-2 text-[11px] font-mono text-zinc-100 focus:outline-none focus:border-sky-400"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => applyCsvText(csvPasteText)}
+                              className="px-3 py-1 rounded bg-sky-500 hover:bg-sky-400 text-zinc-900 font-bold text-[11px] cursor-pointer"
+                            >
+                              Nạp danh sách từ CSV
+                            </button>
+                          </div>
+                        )}
+                        {csvImportMsg && (
+                          <div className="text-[11px] text-emerald-300">{csvImportMsg}</div>
+                        )}
+                      </div>
+
                       {/* 1. Provider Selector */}
                       <div className="space-y-1.5">
                         <label className="text-xs font-medium text-zinc-200 block">
                           1. Chọn AI Agent / Nhà cung cấp (Provider):
                         </label>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                          {AI_PROVIDERS_PRESETS.map((prov) => {
+                          {allProviderPresets.map((prov) => {
                             const isSelected =
-                              (parameters.provider || 'opencode2') === prov.id ||
-                              (!parameters.provider && prov.id === 'opencode2');
+                              (parameters.provider || 'kilo') === prov.id ||
+                              (!parameters.provider && prov.id === 'kilo');
                             return (
                               <button
                                 key={prov.id}
@@ -1643,8 +1833,8 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                             value={parameters.apiKey || ''}
                             onChange={(e) => handleFieldChange('apiKey', e.target.value)}
                             placeholder={
-                              AI_PROVIDERS_PRESETS.find((p) => p.id === (parameters.provider || 'opencode2'))
-                                ?.placeholderKey || 'sk-... hoặc oc_sk_...'
+                              allProviderPresets.find((p) => p.id === (parameters.provider || 'kilo'))
+                                ?.placeholderKey || 'sk-... hoặc eyJhbGci...'
                             }
                             className="w-full bg-[#0e1217] border border-[#263242] rounded-md px-3 py-2 pr-10 text-xs text-zinc-100 placeholder-zinc-500 font-mono focus:outline-none focus:border-sky-400"
                           />
@@ -1700,7 +1890,7 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                           >
                             <optgroup label="Model đề xuất của Nhà cung cấp hiện tại">
                               {(
-                                AI_PROVIDERS_PRESETS.find((p) => p.id === (parameters.provider || 'opencode2'))
+                                allProviderPresets.find((p) => p.id === (parameters.provider || 'kilo'))
                                   ?.models || []
                               ).map((m) => (
                                 <option key={m.value} value={m.value}>

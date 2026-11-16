@@ -57,6 +57,7 @@ function resolveBotToken(wf: IWorkflow, trigger: INode): string {
 export class TelegramPollingManager {
   private pollers: Map<string, PollerState> = new Map();
   private recentEvents: string[] = [];
+  private processedUpdates: Set<number> = new Set();
 
   private record(msg: string) {
     const line = `[${new Date().toISOString()}] ${msg}`;
@@ -202,6 +203,14 @@ export class TelegramPollingManager {
   }
 
   private async dispatch(state: PollerState, update: any) {
+    if (typeof update?.update_id === 'number') {
+      if (this.processedUpdates.has(update.update_id)) return;
+      this.processedUpdates.add(update.update_id);
+      if (this.processedUpdates.size > 500) {
+        const first = this.processedUpdates.values().next().value;
+        if (first !== undefined) this.processedUpdates.delete(first);
+      }
+    }
     const msg = update.message || update.edited_message || update.channel_post || update.callback_query?.message;
     if (!msg) return;
     const from = update.callback_query?.from || msg.from || {};

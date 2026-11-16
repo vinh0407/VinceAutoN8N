@@ -62,7 +62,7 @@ export class OpenAIProvider implements IAIProvider {
             Authorization: `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
           },
-          timeout: 45000,
+          timeout: 60000,
         }
       );
 
@@ -73,6 +73,9 @@ export class OpenAIProvider implements IAIProvider {
         choice?.message?.reasoning_content ||
         choice?.text ||
         (typeof res.data?.content === 'string' ? res.data.content : '');
+      if (!text || !String(text).trim()) {
+        throw new Error(`Model "${model}" trả về nội dung rỗng.`);
+      }
       const usage = res.data?.usage;
 
       return {

@@ -149,12 +149,34 @@ export class VinceModelRouterNode implements INodeType {
         else explicitProvider = 'openai';
       }
 
-      const response = await globalAIRouter.routeAndExecute(messages, strategy, explicitProvider, {
-        temperature: Number(node.parameters.temperature ?? 0.7),
-        baseUrl,
-        model: selectedModel,
-        apiKey,
-      });
+      let response;
+      try {
+        response = await globalAIRouter.routeAndExecute(messages, strategy, explicitProvider, {
+          temperature: Number(node.parameters.temperature ?? 0.7),
+          baseUrl,
+          model: selectedModel,
+          apiKey,
+        });
+      } catch (primaryErr: any) {
+        const fallbacks: any[] = Array.isArray(node.parameters.fallbackProviders) ? node.parameters.fallbackProviders : [];
+        let lastErr = primaryErr;
+        for (const fb of fallbacks) {
+          if (!fb?.baseUrl || !fb?.apiKey || !fb?.defaultModel) continue;
+          if (fb.baseUrl === baseUrl && fb.defaultModel === selectedModel) continue;
+          try {
+            response = await globalAIRouter.routeAndExecute(messages, strategy, 'openai', {
+              temperature: Number(node.parameters.temperature ?? 0.7),
+              baseUrl: fb.baseUrl,
+              model: fb.defaultModel,
+              apiKey: fb.apiKey,
+            });
+            break;
+          } catch (fbErr: any) {
+            lastErr = fbErr;
+          }
+        }
+        if (!response) throw lastErr;
+      }
 
       const chatId = item.json.chatId || item.json.message?.chat?.id || item.json.message?.from?.id;
       const replyToMessageId = item.json.replyToId || item.json.messageId || item.json.message?.message_id;
