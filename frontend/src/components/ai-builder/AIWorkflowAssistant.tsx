@@ -74,6 +74,7 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
   const [activeHistoryChat, setActiveHistoryChat] = useState<IAIChatHistoryItem | null>(null);
   const [activeHistoryLog, setActiveHistoryLog] = useState<IAIAgentProjectLog | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>('crouton-alpha-free');
+  const [isCustomModel, setIsCustomModel] = useState(false);
   const [customBaseUrl, setCustomBaseUrl] = useState<string>('https://opencode.ai/zen/v1');
   const [showProviderDetails, setShowProviderDetails] = useState(false);
   const [nodePromptCategory, setNodePromptCategory] = useState<
@@ -290,42 +291,65 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
               </div>
             </div>
 
-            {/* Model Selection Dropdown */}
-            <div className="space-y-1">
+            {/* Model Selection Dropdown + Custom Model Input */}
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between text-zinc-300 font-medium">
                 <span>Mục Lựa Chọn Model:</span>
-                <span className="text-[10px] font-mono text-emerald-400 font-bold">{selectedModel}</span>
+                <button
+                  type="button"
+                  onClick={() => setIsCustomModel((prev) => !prev)}
+                  className="text-[10px] px-2 py-0.5 rounded bg-[#232329] hover:bg-[#32323a] border border-[#3a3a44] text-sky-300 font-semibold cursor-pointer"
+                >
+                  {isCustomModel ? 'Chọn từ danh sách' : '+ Tự nhập Model'}
+                </button>
               </div>
-              <select
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                className="w-full bg-[#151518] border border-[#2f2f35] rounded-md px-2.5 py-1 text-xs text-zinc-100 focus:outline-none focus:border-[#e6e8ec]"
-              >
-                <optgroup label="Opencode2 (Miễn phí)">
-                  <option value="crouton-alpha-free">crouton-alpha-free (Opencode2 - Miễn phí không giới hạn)</option>
-                </optgroup>
-                <optgroup label="OpenAI">
-                  <option value="gpt-4o">gpt-4o (OpenAI Omni Flagship)</option>
-                  <option value="gpt-4o-mini">gpt-4o-mini (OpenAI Fast & Cost-effective)</option>
-                  <option value="o3-mini">o3-mini (OpenAI Reasoning)</option>
-                </optgroup>
-                <optgroup label="Google Gemini">
-                  <option value="gemini-2.0-flash">gemini-2.0-flash (Google Gemini Flash)</option>
-                  <option value="gemini-1.5-pro">gemini-1.5-pro (Google Gemini Pro)</option>
-                </optgroup>
-                <optgroup label="Anthropic Claude">
-                  <option value="claude-3-5-sonnet">claude-3-5-sonnet (Anthropic Sonnet 3.5)</option>
-                  <option value="claude-3-5-haiku">claude-3-5-haiku (Anthropic Haiku 3.5)</option>
-                </optgroup>
-                <optgroup label="DeepSeek">
-                  <option value="deepseek-chat">deepseek-chat (DeepSeek V3)</option>
-                  <option value="deepseek-reasoner">deepseek-reasoner (DeepSeek R1)</option>
-                </optgroup>
-                <optgroup label="Local Ollama">
-                  <option value="llama3:latest">llama3:latest (Local Ollama)</option>
-                  <option value="qwen2.5-coder:32b">qwen2.5-coder:32b (Qwen Coder)</option>
-                </optgroup>
-              </select>
+              {!isCustomModel ? (
+                <select
+                  value={selectedModel}
+                  onChange={(e) => {
+                    if (e.target.value === '__custom__') {
+                      setIsCustomModel(true);
+                    } else {
+                      setSelectedModel(e.target.value);
+                    }
+                  }}
+                  className="w-full bg-[#151518] border border-[#2f2f35] rounded-md px-2.5 py-1 text-xs text-zinc-100 focus:outline-none focus:border-[#e6e8ec]"
+                >
+                  <optgroup label="Opencode2 (Miễn phí)">
+                    <option value="crouton-alpha-free">crouton-alpha-free (Opencode2 - Miễn phí không giới hạn)</option>
+                  </optgroup>
+                  <optgroup label="OpenAI">
+                    <option value="gpt-4o">gpt-4o (OpenAI Omni Flagship)</option>
+                    <option value="gpt-4o-mini">gpt-4o-mini (OpenAI Fast & Cost-effective)</option>
+                    <option value="o3-mini">o3-mini (OpenAI Reasoning)</option>
+                  </optgroup>
+                  <optgroup label="Google Gemini">
+                    <option value="gemini-2.0-flash">gemini-2.0-flash (Google Gemini Flash)</option>
+                    <option value="gemini-1.5-pro">gemini-1.5-pro (Google Gemini Pro)</option>
+                  </optgroup>
+                  <optgroup label="Anthropic Claude">
+                    <option value="claude-3-5-sonnet">claude-3-5-sonnet (Anthropic Sonnet 3.5)</option>
+                    <option value="claude-3-5-haiku">claude-3-5-haiku (Anthropic Haiku 3.5)</option>
+                  </optgroup>
+                  <optgroup label="DeepSeek">
+                    <option value="deepseek-chat">deepseek-chat (DeepSeek V3)</option>
+                    <option value="deepseek-reasoner">deepseek-reasoner (DeepSeek R1)</option>
+                  </optgroup>
+                  <optgroup label="Local Ollama">
+                    <option value="llama3:latest">llama3:latest (Local Ollama)</option>
+                    <option value="qwen2.5-coder:32b">qwen2.5-coder:32b (Qwen Coder)</option>
+                  </optgroup>
+                  <option value="__custom__">-- Tự nhập tên Model khác (Custom Model) --</option>
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  placeholder="Nhập tên model (VD: gpt-4.1, gemini-2.5-pro, qwen2.5-coder:32b)..."
+                  className="w-full bg-[#151518] border border-sky-400/70 rounded-md px-2.5 py-1 text-xs text-white font-mono focus:outline-none focus:border-sky-400"
+                />
+              )}
             </div>
           </div>
         )}

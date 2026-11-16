@@ -305,6 +305,9 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
   const [isCustomModelMode, setIsCustomModelMode] = useState<boolean>(
     Boolean(parameters.customModel || parameters.model === 'custom')
   );
+  useEffect(() => {
+    setIsCustomModelMode(Boolean(parameters.customModel || parameters.model === 'custom'));
+  }, [node?.id]);
   const [isTestingAi, setIsTestingAi] = useState(false);
   const [testAiResult, setTestAiResult] = useState<{
     success: boolean;
@@ -1568,11 +1571,11 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                             onClick={() => {
                               const next = !isCustomModelMode;
                               setIsCustomModelMode(next);
-                              if (next) {
-                                handleFieldChange('model', 'custom');
-                              } else {
-                                handleFieldChange('model', 'crouton-alpha-free');
-                              }
+                              onUpdateParameters(node.id, {
+                                ...parameters,
+                                model: next ? 'custom' : 'crouton-alpha-free',
+                                ...(next ? {} : { customModel: '' }),
+                              });
                             }}
                             className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors border ${
                               isCustomModelMode
@@ -1590,9 +1593,13 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                             onChange={(e) => {
                               if (e.target.value === 'custom') {
                                 setIsCustomModelMode(true);
-                                handleFieldChange('model', 'custom');
+                                onUpdateParameters(node.id, { ...parameters, model: 'custom' });
                               } else {
-                                handleFieldChange('model', e.target.value);
+                                onUpdateParameters(node.id, {
+                                  ...parameters,
+                                  model: e.target.value,
+                                  customModel: '',
+                                });
                               }
                             }}
                             className="w-full bg-[#0e1217] border border-[#263242] rounded-md px-3 py-2 text-xs text-zinc-100 font-mono focus:outline-none focus:border-sky-400"
@@ -1626,10 +1633,13 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                           <div className="space-y-1">
                             <input
                               type="text"
-                              value={parameters.customModel || ''}
+                              value={parameters.customModel ?? ''}
                               onChange={(e) => {
-                                handleFieldChange('customModel', e.target.value);
-                                handleFieldChange('model', 'custom');
+                                onUpdateParameters(node.id, {
+                                  ...parameters,
+                                  customModel: e.target.value,
+                                  model: 'custom',
+                                });
                               }}
                               placeholder="Nhập tên model (VD: gpt-4o-mini, qwen2.5-coder:32b, deepseek-r1:14b, mistral-large)..."
                               className="w-full bg-[#0e1217] border border-sky-400/80 rounded-md px-3 py-2 text-xs text-white placeholder-zinc-500 font-mono focus:outline-none focus:ring-1 focus:ring-sky-400"
@@ -1638,7 +1648,14 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                               <span>Hệ thống sẽ gửi trực tiếp tên model này tới Base URL endpoint.</span>
                               <button
                                 type="button"
-                                onClick={() => setIsCustomModelMode(false)}
+                                onClick={() => {
+                                  setIsCustomModelMode(false);
+                                  onUpdateParameters(node.id, {
+                                    ...parameters,
+                                    model: 'crouton-alpha-free',
+                                    customModel: '',
+                                  });
+                                }}
                                 className="text-sky-400 hover:underline"
                               >
                                 Quay lại danh sách chọn

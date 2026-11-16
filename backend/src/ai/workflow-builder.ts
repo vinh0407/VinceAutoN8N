@@ -169,19 +169,25 @@ export class AIWorkflowBuilder {
     }
 
     const cleanPrompt = trimmed.replace(/^\/(build|create|workflow)\s+/i, '').trim() || trimmed;
+    const activeProvider = provider || 'opencode2';
+    const activeBaseUrl = (customOptions?.baseUrl || DEFAULT_OPENCODE2_PROVIDER.baseUrl).trim();
+    const activeModel = (customOptions?.model || DEFAULT_OPENCODE2_PROVIDER.defaultModel).trim();
+    const activeApiKey = (customOptions?.apiKey || DEFAULT_OPENCODE2_PROVIDER.apiKey).trim();
 
-    const systemInstruction = `Bạn là VinceAuto AI Architect vận hành trên model "${DEFAULT_OPENCODE2_PROVIDER.defaultModel}" của provider "${DEFAULT_OPENCODE2_PROVIDER.providerName}" (${DEFAULT_OPENCODE2_PROVIDER.baseUrl}).
-Nhiệm vụ của bạn là phân tích yêu cầu hoặc lệnh của người dùng và tạo ra một cấu trúc JSON workflow tự động hóa hoàn chỉnh, gọi đúng tên chuẩn và đúng mã "type" của từng nút kéo thả trong VinceAuto.
+    const systemInstruction = `Bạn là VinceAuto AI Architect vận hành trên model "${activeModel}" (${activeProvider} • ${activeBaseUrl}).
+Nhiệm vụ của bạn là phân tích yêu cầu của người dùng và thiết kế một JSON workflow tự động hóa hoàn chỉnh, logic chặt chẽ, sử dụng đúng mã "type" và tên chuẩn của các nút trong VinceAuto.
 
 ${MASTER_NODE_PROMPT_DICTIONARY}
 
-QUY TẮC SINH WORKFLOW TỰ ĐỘNG:
-1. Luôn bắt đầu bằng 1 nút Trigger phù hợp nhất (ví dụ: "trigger.cron", "trigger.webhook", "trigger.ecommerce", "trigger.payment", "trigger.appEvent", "trigger.form", "trigger.chat", "trigger.database", hoặc "trigger.manual").
-2. Gọi ĐÚNG "type" và tên hiển thị chuẩn ("name") của các nút trong danh mục trên.
-3. Trong tham số của các nút AI ("vince.modelRouter", "vince.agentManager", "ai.agent.*"), luôn đặt provider="Opencode2", model="crouton-alpha-free", baseUrl="https://opencode.ai/zen/v1".
-4. Sử dụng biểu thức chuẩn {{ $json.field }} để truyền dữ liệu giữa các nút.
-5. Sắp xếp tọa độ position [X, Y] từ trái sang phải cách đều 300px (ví dụ: [80, 260], [380, 260], [680, 260], [980, 260], [1280, 260]).
-6. Trả về KẾT QUẢ DUY NHẤT dưới dạng JSON hợp lệ (không kèm giải thích ngoài JSON):
+QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
+1. Luôn bắt đầu bằng ĐÚNG 1 nút Trigger phù hợp nhất ("trigger.appEvent" cho Telegram/Zalo/App, "trigger.chat" cho Chatbot tổng quát, "trigger.cron" cho lịch định kỳ, "trigger.webhook", "trigger.ecommerce", "trigger.payment", "trigger.form", "trigger.database", hoặc "trigger.manual").
+2. Sắp xếp luồng dữ liệu theo trình tự logic chuẩn: Trigger -> (Lọc Filter / Chuẩn hóa Edit Fields nếu cần) -> AI Agent / Xử lý -> Hành động đích (Telegram, Zalo, Sheets, Gmail, CRM, Database...).
+3. Nếu có nhiều hành động đích độc lập (ví dụ vừa gửi Telegram vừa gửi Zalo/Sheets), hãy nối song song (fan-out) từ nút AI Agent ra các nhánh đích thay vì nối nối tiếp gượng ép.
+4. Gọi ĐÚNG "type" và tên hiển thị chuẩn ("name") của các nút trong danh mục trên.
+5. Trong tham số của các nút AI ("vince.modelRouter", "vince.agentManager", "ai.agent.*"), đặt provider="${activeProvider}", model="${activeModel}", baseUrl="${activeBaseUrl}".
+6. Với botchat Telegram: dùng chatId="{{ $json.chatId || $json.message.chat.id }}" và message="{{ $json.aiResponse || $json.text }}" để ai nhắn bot cũng tự trả lời đúng người đó (TUYỆT ĐỐI không hardcode chatId cố định).
+7. Sắp xếp tọa độ position [X, Y] từ trái sang phải cách đều 300px (nhánh song song đặt cách nhau 180px theo trục Y).
+8. Trả về KẾT QUẢ DUY NHẤT dưới dạng JSON hợp lệ (không kèm văn bản ngoài JSON):
 {
   "summary": "Tóm tắt quy trình tự động hóa",
   "steps": ["Bước 1: ...", "Bước 2: ...", "Bước 3: ..."],
@@ -210,6 +216,13 @@ QUY TẮC SINH WORKFLOW TỰ ĐỘNG:
         ? `Workflow hiện tại:\n${JSON.stringify(existingWorkflow, null, 2)}\n\nYêu cầu cập nhật của người dùng:\n${cleanPrompt}`
         : `Hãy thiết kế workflow tự động hóa hoàn chỉnh cho yêu cầu sau:\n${cleanPrompt}`;
 
+    const buildOpts = {
+      provider: activeProvider,
+      baseUrl: activeBaseUrl,
+      model: activeModel,
+      apiKey: activeApiKey,
+    };
+
     try {
       const response = await globalAIRouter.routeAndExecute(
         [
@@ -217,12 +230,12 @@ QUY TẮC SINH WORKFLOW TỰ ĐỘNG:
           { role: 'user', content: userMessage },
         ],
         'auto',
-        provider || 'opencode2',
+        activeProvider,
         {
-          model: customOptions?.model || DEFAULT_OPENCODE2_PROVIDER.defaultModel,
-          baseUrl: customOptions?.baseUrl || DEFAULT_OPENCODE2_PROVIDER.baseUrl,
-          apiKey: customOptions?.apiKey || DEFAULT_OPENCODE2_PROVIDER.apiKey,
-          temperature: 0.25,
+          model: activeModel,
+          baseUrl: activeBaseUrl,
+          apiKey: activeApiKey,
+          temperature: 0.2,
         }
       );
 
@@ -234,25 +247,23 @@ QUY TẮC SINH WORKFLOW TỰ ĐỘNG:
       }
 
       if (!cleanJson.startsWith('{')) {
-        return this.compileIntelligentWorkflow(cleanPrompt, existingWorkflow);
+        return this.compileIntelligentWorkflow(cleanPrompt, existingWorkflow, buildOpts);
       }
 
       const parsed: IAIBuildPlan = JSON.parse(cleanJson);
       if (!parsed.workflow || !Array.isArray(parsed.workflow.nodes) || parsed.workflow.nodes.length === 0) {
-        return this.compileIntelligentWorkflow(cleanPrompt, existingWorkflow);
+        return this.compileIntelligentWorkflow(cleanPrompt, existingWorkflow, buildOpts);
       }
 
-      parsed.workflow.id = existingWorkflow?.id || uuidv4();
-      parsed.workflow.createdAt = existingWorkflow?.createdAt || new Date().toISOString();
-      parsed.workflow.updatedAt = new Date().toISOString();
-      parsed.modelUsed = response.model || DEFAULT_OPENCODE2_PROVIDER.defaultModel;
-      parsed.providerUsed = DEFAULT_OPENCODE2_PROVIDER.providerName;
+      parsed.workflow = this.normalizeAndValidateWorkflow(parsed.workflow, existingWorkflow, buildOpts);
+      parsed.modelUsed = response.model || activeModel;
+      parsed.providerUsed = activeProvider;
       return parsed;
     } catch (err: any) {
       console.warn(
-        `[AI Workflow Builder - Opencode2 crouton-alpha-free] Using intelligent local compiler (${err.message}).`
+        `[AI Workflow Builder - ${activeProvider}/${activeModel}] Using intelligent local compiler (${err.message}).`
       );
-      return this.compileIntelligentWorkflow(cleanPrompt, existingWorkflow);
+      return this.compileIntelligentWorkflow(cleanPrompt, existingWorkflow, buildOpts);
     }
   }
 
@@ -520,8 +531,8 @@ QUY TẮC SINH WORKFLOW TỰ ĐỘNG:
         parameters: {
           resource: 'message',
           operation: 'sendMessage',
-          chatId: '-100123456789',
-          message: '🤖 [VinceAuto - Opencode2]:\n{{ $json.text || $json.summary || JSON.stringify($json) }}',
+          chatId: '{{ $json.chatId || $json.message.chat.id }}',
+          message: '{{ $json.aiResponse || $json.text || JSON.stringify($json) }}',
           parseMode: 'HTML',
         },
       };
@@ -762,10 +773,109 @@ QUY TẮC SINH WORKFLOW TỰ ĐỘNG:
   }
 
   /**
-   * Intelligent Local Workflow Compiler that understands all VinceAuto node names,
-   * triggers, 21 app suites, 18 data transformation nodes, and Opencode2 AI Agent nodes.
+   * Sanitizes, validates, and auto-lays out an LLM-generated workflow:
+   * - Deduplicates node IDs & ensures valid positions
+   * - Removes broken/self-loop connections & wires orphan nodes logically
+   * - Applies the user's selected AI model/baseUrl and objective Telegram expressions
    */
-  private static compileIntelligentWorkflow(prompt: string, existingWorkflow?: IWorkflow): IAIBuildPlan {
+  private static normalizeAndValidateWorkflow(
+    workflow: IWorkflow,
+    existingWorkflow: IWorkflow | undefined,
+    opts: { provider: string; baseUrl: string; model: string; apiKey?: string }
+  ): IWorkflow {
+    const rawNodes = Array.isArray(workflow.nodes) ? workflow.nodes : [];
+    const seenIds = new Set<string>();
+    const idMap = new Map<string, string>();
+    const nodes: INode[] = rawNodes.map((n, idx) => {
+      let id = String(n.id || `node_${idx + 1}`).trim();
+      while (seenIds.has(id)) id = `${id}_${idx + 1}`;
+      seenIds.add(id);
+      if (n.id) idMap.set(String(n.id), id);
+
+      const type = String(n.type || 'transform.editFields');
+      const params: Record<string, any> = { ...(n.parameters || {}) };
+
+      // Apply selected AI model/baseUrl on AI nodes
+      if (type === 'vince.modelRouter' || type === 'vince.agentManager' || type.startsWith('ai.')) {
+        params.provider = opts.provider || params.provider || 'opencode2';
+        params.baseUrl = opts.baseUrl || params.baseUrl || DEFAULT_OPENCODE2_PROVIDER.baseUrl;
+        params.model = opts.model || params.model || DEFAULT_OPENCODE2_PROVIDER.defaultModel;
+        if (opts.apiKey) params.apiKey = opts.apiKey;
+      }
+
+      // Ensure objective dynamic chatId on Telegram nodes
+      if (type === 'vince.telegram') {
+        const cid = String(params.chatId || '').trim();
+        if (!cid || cid === '-100123456789' || cid.includes('ungdothevinh')) {
+          params.chatId = '{{ $json.chatId || $json.message.chat.id }}';
+        }
+        if (!params.message) {
+          params.message = '{{ $json.aiResponse || $json.text }}';
+        }
+      }
+
+      const pos: [number, number] =
+        Array.isArray(n.position) && n.position.length === 2 && Number.isFinite(n.position[0]) && Number.isFinite(n.position[1])
+          ? [Math.round(n.position[0]), Math.round(n.position[1])]
+          : [80 + idx * 300, 260];
+
+      return {
+        ...n,
+        id,
+        name: String(n.name || type),
+        type,
+        position: pos,
+        parameters: params,
+      };
+    });
+
+    const validIds = new Set(nodes.map((n) => n.id));
+    const edgeSet = new Set<string>();
+    const connections: IConnection[] = [];
+    for (const c of workflow.connections || []) {
+      const src = idMap.get(String(c.source)) || String(c.source);
+      const tgt = idMap.get(String(c.target)) || String(c.target);
+      if (!validIds.has(src) || !validIds.has(tgt) || src === tgt) continue;
+      const key = `${src}->${tgt}:${c.sourceHandle || ''}`;
+      if (edgeSet.has(key)) continue;
+      edgeSet.add(key);
+      connections.push({ ...c, source: src, target: tgt });
+    }
+
+    // Wire any orphan non-trigger nodes to the previous node so no node is left floating
+    const hasIncoming = new Set(connections.map((c) => c.target));
+    for (let i = 1; i < nodes.length; i++) {
+      const node = nodes[i];
+      if (!node.type.startsWith('trigger.') && !hasIncoming.has(node.id)) {
+        const prev = nodes[i - 1];
+        connections.push({ source: prev.id, target: node.id });
+        hasIncoming.add(node.id);
+      }
+    }
+
+    return {
+      id: existingWorkflow?.id || workflow.id || uuidv4(),
+      name: workflow.name || 'Workflow Tự Động Hóa',
+      nodes,
+      connections,
+      active: existingWorkflow?.active ?? workflow.active ?? false,
+      createdAt: existingWorkflow?.createdAt || workflow.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Intelligent Local Workflow Compiler that understands all VinceAuto node names,
+   * triggers, 21 app suites, 18 data transformation nodes, and custom AI Agent models.
+   */
+  private static compileIntelligentWorkflow(
+    prompt: string,
+    existingWorkflow?: IWorkflow,
+    opts?: { provider: string; baseUrl: string; model: string; apiKey?: string }
+  ): IAIBuildPlan {
+    const activeProvider = opts?.provider || DEFAULT_OPENCODE2_PROVIDER.providerName;
+    const activeBaseUrl = opts?.baseUrl || DEFAULT_OPENCODE2_PROVIDER.baseUrl;
+    const activeModel = opts?.model || DEFAULT_OPENCODE2_PROVIDER.defaultModel;
     const p = prompt.toLowerCase();
     const nodes: INode[] = [];
     const connections: IConnection[] = [];
@@ -958,46 +1068,52 @@ QUY TẮC SINH WORKFLOW TỰ ĐỘNG:
       steps.push('Loại bỏ các bản ghi trùng lặp bằng Remove Duplicates (transform.removeDuplicates)');
     }
 
-    // 4. AI AGENT CORE NODE (Opencode2 • crouton-alpha-free • https://opencode.ai/zen/v1)
+    // 4. AI AGENT CORE NODE (respects user-selected Provider, Base URL, API Key & Model)
+    let aiNodeId = '';
     if (p.includes('multi-agent') || p.includes('supervisor') || p.includes('planner') || p.includes('critic')) {
+      aiNodeId = 'node_ai_supervisor';
       nodes.push({
-        id: 'node_ai_supervisor',
-        name: 'Vince Multi-Agent Supervisor (Opencode2 crouton-alpha-free)',
+        id: aiNodeId,
+        name: `Vince Multi-Agent Supervisor (${activeModel})`,
         type: 'vince.agentManager',
         position: nextPos(),
         parameters: {
-          provider: 'Opencode2',
-          model: 'crouton-alpha-free',
-          baseUrl: 'https://opencode.ai/zen/v1',
+          provider: activeProvider,
+          model: activeModel,
+          baseUrl: activeBaseUrl,
+          ...(opts?.apiKey ? { apiKey: opts.apiKey } : {}),
           agentRole: 'supervisor',
           subAgents: 'Planner, Researcher, Critic, Executor',
           taskDescription: `Thực thi yêu cầu: ${prompt}`,
         },
       });
-      steps.push('Điều phối tổ hợp Multi-Agent (Planner, Researcher, Critic) trên model Opencode2 crouton-alpha-free (vince.agentManager)');
+      steps.push(`Điều phối tổ hợp Multi-Agent trên model ${activeModel} (vince.agentManager)`);
     } else {
-      const isTelegramChat = p.includes('telegram') || p.includes('tele') || p.includes('botchat');
+      const isTelegramChat = p.includes('telegram') || p.includes('tele') || p.includes('botchat') || p.includes('zalo');
+      aiNodeId = 'node_ai_opencode2';
       nodes.push({
-        id: 'node_ai_opencode2',
-        name: 'AI Agent Opencode2 (crouton-alpha-free)',
+        id: aiNodeId,
+        name: `AI Agent (${activeModel})`,
         type: 'vince.modelRouter',
         position: nextPos(),
         parameters: {
-          provider: 'Opencode2',
+          provider: activeProvider,
           providerType: 'openai',
-          baseUrl: 'https://opencode.ai/zen/v1',
-          model: 'crouton-alpha-free',
+          baseUrl: activeBaseUrl,
+          model: activeModel,
+          ...(opts?.apiKey ? { apiKey: opts.apiKey } : {}),
           strategy: 'auto',
           prompt: isTelegramChat
             ? '{{ $json.userQuery || $json.text || $json.message.text }}'
-            : `Bạn là AI Agent tự động hóa của VinceAuto. Hãy phân tích dữ liệu sau và tạo nội dung xử lý tối ưu cho yêu cầu "${prompt}":\n{{ JSON.stringify($json) }}`,
+            : `Bạn là AI Agent tự động hóa. Hãy phân tích dữ liệu sau và tạo nội dung xử lý tối ưu cho yêu cầu "${prompt}":\n{{ JSON.stringify($json) }}`,
           systemPrompt: isTelegramChat
-            ? 'Bạn là trợ lý ảo AI thông minh trên Telegram. Hãy trả lời câu hỏi của người dùng một cách chính xác, khách quan, lịch sự và hữu ích.'
-            : 'Bạn là chuyên gia tự động hóa của VinceAuto.',
+            ? 'Bạn là trợ lý ảo AI thông minh trên Telegram & Zalo. Hãy trả lời câu hỏi của người dùng một cách chính xác, khách quan, lịch sự và hữu ích.'
+            : 'Bạn là chuyên gia tự động hóa quy trình.',
         },
       });
-      steps.push(isTelegramChat ? 'Gọi API AI Agent Opencode2 (crouton-alpha-free) để suy luận câu trả lời cho người dùng' : 'Phân tích, suy luận và sinh kết quả tự động bằng AI Agent Opencode2 - model crouton-alpha-free (vince.modelRouter)');
+      steps.push(`Gọi API AI Agent (${activeProvider} / ${activeModel}) để xử lý và tạo câu trả lời`);
     }
+    const aiNodeIndex = nodes.length - 1;
 
     // 5. DESTINATION / APP ACTIONS (Google Sheets, Drive, Gmail, CRM, Database, Payment, Telegram, Zalo, Slack, Discord)
     if (p.includes('sheet') || p.includes('trang tính') || p.includes('báo cáo') || p.includes('lưu') || p.includes('đơn hàng') || p.includes('lead')) {
@@ -1243,16 +1359,28 @@ QUY TẮC SINH WORKFLOW TỰ ĐỘNG:
       steps.push(isTelegramChat ? 'Tự động gọi API Telegram để phản hồi trực tiếp câu trả lời của AI Agent về @id của người gửi' : 'Gửi thông báo kết quả tức thời về Telegram Bot (vince.telegram)');
     }
 
-    // Wire sequential connections
-    for (let i = 0; i < nodes.length - 1; i++) {
+    // Wire sequential connections up to AI node, then fan-out parallel destination branches cleanly
+    for (let i = 0; i < aiNodeIndex; i++) {
       connections.push({
         source: nodes[i].id,
         target: nodes[i + 1].id,
       });
     }
 
+    const destNodes = nodes.slice(aiNodeIndex + 1);
+    if (destNodes.length === 1) {
+      connections.push({ source: nodes[aiNodeIndex].id, target: destNodes[0].id });
+    } else if (destNodes.length > 1) {
+      const destX = nodes[aiNodeIndex].position[0] + 320;
+      const startY = Math.max(80, 260 - Math.floor(((destNodes.length - 1) * 160) / 2));
+      destNodes.forEach((dn, idx) => {
+        dn.position = [destX, startY + idx * 160];
+        connections.push({ source: nodes[aiNodeIndex].id, target: dn.id });
+      });
+    }
+
     return {
-      summary: `AI Agent Opencode2 (${DEFAULT_OPENCODE2_PROVIDER.defaultModel}) đã thiết kế tự động quy trình gồm ${nodes.length} nút chuẩn cho yêu cầu: "${prompt}"`,
+      summary: `AI Agent (${activeProvider} • ${activeModel}) đã thiết kế quy trình gồm ${nodes.length} nút cho yêu cầu: "${prompt}"`,
       steps,
       workflow: {
         id: existingWorkflow?.id || uuidv4(),
@@ -1262,8 +1390,8 @@ QUY TẮC SINH WORKFLOW TỰ ĐỘNG:
         createdAt: existingWorkflow?.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
-      modelUsed: DEFAULT_OPENCODE2_PROVIDER.defaultModel,
-      providerUsed: DEFAULT_OPENCODE2_PROVIDER.providerName,
+      modelUsed: activeModel,
+      providerUsed: activeProvider,
     };
   }
 }

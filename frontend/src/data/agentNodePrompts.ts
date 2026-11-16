@@ -505,6 +505,20 @@ export const PREBUILT_AGENT_WORKFLOW_PROMPTS: IPrebuiltWorkflowPrompt[] = [
       '/build Lên lịch tự động mỗi ngày, dùng AI Agent Opencode2 (crouton-alpha-free) sáng tạo kịch bản, caption và hashtag xu hướng, đăng đồng loạt lên TikTok: Publish Direct Video, Threads: Publish Text Post, Instagram: Publish Reel và YouTube Shorts, lưu lịch đăng vào Google Sheets và báo về Telegram',
   },
   {
+    id: 'wf_prompt_chatbot_telegram_zalo',
+    title: '0. Chatbot AI 2 Chiều với Telegram & Zalo OA (Ai nhắn cũng tự trả lời)',
+    category: 'Chatbot AI • Telegram / Zalo',
+    nodesCount: 4,
+    nodeNames: [
+      'Telegram Trigger (Message)',
+      'Edit Fields (Chuẩn hóa Chat ID & Câu hỏi)',
+      'AI Agent (Tùy chọn API / Model)',
+      'Telegram & Zalo OA: Phản hồi 2 chiều',
+    ],
+    prompt:
+      '/build Tạo chatbot AI 2 chiều nhận tin nhắn từ bất kỳ người dùng nào trên Telegram hoặc Zalo, chuẩn hóa câu hỏi và chatId bằng Edit Fields, gọi API AI Agent trả lời khách quan và tự động reply lại đúng người gửi qua Telegram & Zalo OA',
+  },
+  {
     id: 'wf_prompt_ecom_shopee',
     title: '1. Tự động xử lý Đơn hàng Shopee / TikTok Shop + Zalo ZNS + Google Sheets',
     category: 'TMĐT & Bán lẻ',
@@ -513,27 +527,27 @@ export const PREBUILT_AGENT_WORKFLOW_PROMPTS: IPrebuiltWorkflowPrompt[] = [
       'E-commerce Trigger [T/W]',
       'Shopee: Get Order Detail',
       'Filter (Lọc đơn hợp lệ)',
-      'AI Agent Opencode2 (crouton-alpha-free)',
+      'AI Agent (Phân tích đơn hàng)',
       'Google Sheets: Append Row',
       'Zalo OA: Send ZNS + Telegram',
     ],
     prompt:
-      '/build Khi có đơn hàng mới trên Shopee hoặc TikTok Shop, tự động lấy chi tiết đơn hàng, lọc đơn hợp lệ bằng Filter, dùng AI Agent Opencode2 (crouton-alpha-free) phân tích ghi chú khách hàng, lưu vào Google Sheets, gửi thông báo Zalo ZNS và báo về Telegram',
+      '/build Khi có đơn hàng mới trên Shopee hoặc TikTok Shop, tự động lấy chi tiết đơn hàng, lọc đơn hợp lệ bằng Filter, dùng AI Agent phân tích ghi chú khách hàng, lưu vào Google Sheets, gửi thông báo Zalo ZNS và báo về Telegram',
   },
   {
     id: 'wf_prompt_cskh_omnichannel',
-    title: '2. AI Agent Opencode2 CSKH Đa kênh (Chat / Telegram / Zalo) + Lưu CRM',
+    title: '2. AI Agent CSKH Đa kênh (Telegram / Zalo / Webchat) + Lưu CRM',
     category: 'CSKH & Hội thoại AI',
     nodesCount: 5,
     nodeNames: [
       'Chat Trigger [T/W]',
       'Edit Fields (Set)',
-      'AI Agent Opencode2 (crouton-alpha-free)',
+      'AI Agent (Tư vấn khách hàng)',
       'CRM HubSpot: Upsert Contact',
       'Telegram: Send Message',
     ],
     prompt:
-      '/build Tạo workflow CSKH tự động khi khách nhắn tin qua Chat Trigger, chuẩn hóa thông tin bằng Edit Fields (Set), dùng AI Agent Opencode2 (crouton-alpha-free) tư vấn và phân loại nhu cầu, đồng bộ vào CRM HubSpot và gửi cảnh báo về Telegram',
+      '/build Tạo workflow CSKH tự động khi khách nhắn tin qua Chat Trigger, chuẩn hóa thông tin bằng Edit Fields (Set), dùng AI Agent tư vấn và phân loại nhu cầu, đồng bộ vào CRM HubSpot và phản hồi qua Telegram',
   },
   {
     id: 'wf_prompt_payment_vietqr_momo',
@@ -543,28 +557,28 @@ export const PREBUILT_AGENT_WORKFLOW_PROMPTS: IPrebuiltWorkflowPrompt[] = [
     nodeNames: [
       'Payment Webhook Trigger [T/W]',
       'Edit Fields (Set)',
-      'AI Agent Opencode2 (crouton-alpha-free)',
+      'AI Agent (Đối soát giao dịch)',
       'Google Sheets: Append or Update Row',
       'Gmail: Send Email + Telegram',
     ],
     prompt:
-      '/build Khi nhận callback giao dịch thành công từ Payment Webhook Trigger (MoMo / VietQR), chuẩn hóa dữ liệu bằng Edit Fields (Set), đối soát tự động bằng AI Agent Opencode2 (crouton-alpha-free), ghi sổ Google Sheets, gửi email biên lai qua Gmail và thông báo Telegram',
+      '/build Khi nhận callback giao dịch thành công từ Payment Webhook Trigger (MoMo / VietQR), chuẩn hóa dữ liệu bằng Edit Fields (Set), đối soát tự động bằng AI Agent, ghi sổ Google Sheets, gửi email biên lai qua Gmail và thông báo Telegram',
   },
   {
     id: 'wf_prompt_news_scraper_notion',
-    title: '4. Cào Tin tức mỗi sáng + AI Opencode2 Tóm tắt + Lưu Notion & Google Sheets',
+    title: '4. Cào Tin tức mỗi sáng + AI Tóm tắt + Lưu Notion & Google Sheets',
     category: 'Nghiên cứu & Nội dung',
     nodesCount: 6,
     nodeNames: [
       'Schedule Trigger (8:00 AM)',
       'Vince Web Scraper',
       'Remove Duplicates',
-      'Vince Multi-Agent Supervisor (Opencode2)',
+      'AI Agent (Tóm tắt chuyên sâu)',
       'Notion: Create Page',
       'Telegram: Send Message',
     ],
     prompt:
-      '/build Lên lịch 8:00 sáng mỗi ngày bằng Schedule Trigger, dùng Vince Web Scraper cào tin tức công nghệ mới, khử trùng lặp bằng Remove Duplicates, điều phối Multi-Agent Supervisor (Opencode2 crouton-alpha-free) tóm tắt chuyên sâu, lưu vào Notion + Google Sheets và gửi báo cáo qua Telegram',
+      '/build Lên lịch 8:00 sáng mỗi ngày bằng Schedule Trigger, dùng Vince Web Scraper cào tin tức công nghệ mới, khử trùng lặp bằng Remove Duplicates, gọi AI Agent tóm tắt chuyên sâu, lưu vào Notion + Google Sheets và gửi báo cáo qua Telegram',
   },
   {
     id: 'wf_prompt_lead_form_ms365',
@@ -574,13 +588,13 @@ export const PREBUILT_AGENT_WORKFLOW_PROMPTS: IPrebuiltWorkflowPrompt[] = [
     nodeNames: [
       'Form Trigger [T/W]',
       'Edit Fields (Set)',
-      'AI Agent Opencode2 (crouton-alpha-free)',
+      'AI Agent (Chấm điểm Lead)',
       'Google Calendar: Create Event',
       'Microsoft 365 (Excel & Teams)',
       'Gmail: Send Email',
     ],
     prompt:
-      '/build Khi khách hàng điền biểu mẫu đăng ký qua Form Trigger, chuẩn hóa bằng Edit Fields (Set), dùng AI Agent Opencode2 (crouton-alpha-free) chấm điểm Lead, tự động đặt lịch hẹn trên Google Calendar, đồng bộ vào Microsoft 365 (Excel & Teams) và gửi email xác nhận qua Gmail',
+      '/build Khi khách hàng điền biểu mẫu đăng ký qua Form Trigger, chuẩn hóa bằng Edit Fields (Set), dùng AI Agent chấm điểm Lead, tự động đặt lịch hẹn trên Google Calendar, đồng bộ vào Microsoft 365 (Excel & Teams) và gửi email xác nhận qua Gmail',
   },
   {
     id: 'wf_prompt_db_cdc_devops',
@@ -590,11 +604,11 @@ export const PREBUILT_AGENT_WORKFLOW_PROMPTS: IPrebuiltWorkflowPrompt[] = [
     nodeNames: [
       'Database Trigger [T/P]',
       'Filter',
-      'AI Agent Opencode2 (crouton-alpha-free)',
+      'AI Agent (Phân tích bất thường)',
       'Database: Execute Query',
       'Slack + Discord + Telegram',
     ],
     prompt:
-      '/build Khi có bản ghi mới trong PostgreSQL / Supabase qua Database Trigger, lọc điều kiện bằng Filter, phân tích bất thường bằng AI Agent Opencode2 (crouton-alpha-free), cập nhật trạng thái vào Database và bắn cảnh báo tức thời qua Slack, Discord và Telegram',
+      '/build Khi có bản ghi mới trong PostgreSQL / Supabase qua Database Trigger, lọc điều kiện bằng Filter, phân tích bất thường bằng AI Agent, cập nhật trạng thái vào Database và bắn cảnh báo tức thời qua Slack, Discord và Telegram',
   },
 ];

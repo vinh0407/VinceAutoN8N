@@ -580,6 +580,40 @@ function optimizeTemplateForVinceAuto(tpl: IN8nTemplateItem): IN8nTemplateItem {
  */
 const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
   {
+    id: 'vince_tpl_chatbot_telegram_zalo_00',
+    fileName: 'VinceAuto_Telegram_Zalo_Chatbot_2Way.json',
+    relativePath: 'VinceAuto Featured / Chatbot AI Telegram & Zalo',
+    category: 'VINCEAUTO_FEATURED',
+    categoryVi: '★ Mẫu Chatbot AI 2 Chiều (Telegram / Zalo)',
+    titleEn: '2-Way AI Chatbot for Telegram & Zalo OA (Auto-Reply Any User)',
+    titleVi: 'Chatbot AI 2 Chiều với Telegram & Zalo OA (Ai nhắn tin cũng tự động trả lời)',
+    descriptionVi:
+      'Mẫu chatbot khách quan cho bất kỳ người dùng nào: Lắng nghe tin nhắn đến từ Telegram Bot API / Chat Trigger, chuẩn hóa câu hỏi & Chat ID người gửi bằng Edit Fields, gọi AI Agent (tự chọn Provider, API Key, Base URL & Model bất kỳ) để trả lời và tự động phản hồi đồng thời qua Telegram & Zalo OA.',
+    departmentVi: 'Chatbot AI & CSKH',
+    isVinceOptimizedFeatured: true,
+    nodesCount: 5,
+    nodeNames: [
+      'Telegram Trigger (Message)',
+      'Edit Fields (Chuẩn hóa Câu hỏi & Chat ID)',
+      'AI Agent (Tùy chọn API & Model)',
+      'Telegram: Send Message (Reply người gửi)',
+      'Zalo OA: Send ZNS / Tin nhắn CSKH',
+    ],
+    nodes: [
+      { id: 'cb1', name: 'Telegram Trigger', type: 'trigger.appEvent', position: [80, 240], parameters: { app: 'telegram', updates: ['Message'] } },
+      { id: 'cb2', name: 'Edit Fields (Set)', type: 'transform.editFields', position: [380, 240], parameters: { mode: 'manual', fields: { userQuery: '{{ $json.text || $json.message.text }}', chatId: '{{ $json.chatId || $json.message.chat.id }}' }, keepOnlySet: false } },
+      { id: 'cb3', name: 'AI Agent', type: 'vince.modelRouter', position: [680, 240], parameters: { provider: 'opencode2', baseUrl: 'https://opencode.ai/zen/v1', model: 'crouton-alpha-free', prompt: '{{ $json.userQuery || $json.text || $json.message.text }}', systemPrompt: 'Bạn là trợ lý ảo AI thông minh trên Telegram & Zalo. Hãy trả lời câu hỏi của người dùng một cách chính xác, khách quan, lịch sự và hữu ích.' } },
+      { id: 'cb4', name: 'Telegram: Send Message', type: 'vince.telegram', position: [1000, 150], parameters: { resource: 'message', operation: 'sendMessage', chatId: '{{ $json.chatId || $json.message.chat.id }}', message: '{{ $json.aiResponse || $json.text }}', parseMode: 'HTML' } },
+      { id: 'cb5', name: 'Zalo OA: Send ZNS Notification', type: 'vince.zalo.sendZns', position: [1000, 330], parameters: { resource: 'ZNS', operation: 'sendZns', phone: '{{ $json.phone || "" }}', templateId: 'zns_cskh_reply' } },
+    ],
+    connections: [
+      { source: 'cb1', target: 'cb2' },
+      { source: 'cb2', target: 'cb3' },
+      { source: 'cb3', target: 'cb4' },
+      { source: 'cb3', target: 'cb5' },
+    ],
+  },
+  {
     id: 'vince_tpl_social_tiktok_threads_01',
     fileName: 'VinceAuto_TikTok_Threads_Reels_Crosspost.json',
     relativePath: 'VinceAuto Featured / Social Media Automation',
