@@ -395,6 +395,9 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
   const [activeTab, setActiveTab] = useState<'parameters' | 'settings'>('parameters');
   const [dataViewMode, setDataViewMode] = useState<'schema' | 'table' | 'json'>('schema');
   const [inputViewMode, setInputViewMode] = useState<'schema' | 'json'>('schema');
+  const [customInputItems, setCustomInputItems] = useState<any[] | null>(null);
+  const [customInputText, setCustomInputText] = useState<string>('');
+  const [customInputError, setCustomInputError] = useState<string | null>(null);
   const [isTestingStep, setIsTestingStep] = useState(false);
   const [stepOutput, setStepOutput] = useState<any[]>(outputData);
   const [stepError, setStepError] = useState<string | null>(errorMessage || null);
@@ -608,8 +611,8 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
           parameters,
         },
         inputData:
-          inputData.length > 0
-            ? inputData
+          effectiveInputItems.length > 0
+            ? effectiveInputItems
             : [{ json: appCatalog?.sampleOutput || { message: 'Sample input event' } }],
         workflow,
       });
@@ -887,7 +890,7 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
   };
 
   // Sample upstream input data for action nodes so user can always drag & drop fields
-  const effectiveInputItems =
+  const baseInputItems =
     inputData.length > 0
       ? inputData
       : !isTrigger
@@ -897,6 +900,7 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
           },
         ]
       : [];
+  const effectiveInputItems = customInputItems ?? baseInputItems;
 
   const firstInputJson =
     effectiveInputItems[0]?.json || effectiveInputItems[0] || null;
@@ -1180,14 +1184,18 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                       Schema
                     </button>
                     <button
-                      onClick={() => setInputViewMode('json')}
+                      onClick={() => {
+                        setInputViewMode('json');
+                        setCustomInputText(JSON.stringify(effectiveInputItems, null, 2));
+                        setCustomInputError(null);
+                      }}
                       className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors ${
                         inputViewMode === 'json'
                           ? 'bg-[#e6e8ec] text-zinc-900'
                           : 'text-zinc-400 hover:text-white'
                       }`}
                     >
-                      JSON
+                      JSON (Sửa)
                     </button>
                   </div>
                 </div>
@@ -1230,9 +1238,49 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                       </div>
                     ))
                   ) : (
-                    <pre className="text-xs font-mono text-zinc-300 whitespace-pre-wrap bg-[#141416] p-3 rounded-lg border border-[#2c2c30]">
-                      {JSON.stringify(effectiveInputItems, null, 2)}
-                    </pre>
+                    <div className="flex flex-col h-full space-y-2">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-zinc-400">
+                          {customInputError ? (
+                            <span className="text-rose-400">{customInputError}</span>
+                          ) : (
+                            <span className="text-emerald-400">Nhập/sửa trực tiếp JSON đầu vào để test node</span>
+                          )}
+                        </span>
+                        {customInputItems !== null && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCustomInputItems(null);
+                              setCustomInputText(JSON.stringify(baseInputItems, null, 2));
+                              setCustomInputError(null);
+                            }}
+                            className="px-2 py-0.5 rounded bg-[#26262c] hover:bg-[#32323a] text-zinc-300 text-[10px] cursor-pointer"
+                          >
+                            Khôi phục mặc định
+                          </button>
+                        )}
+                      </div>
+                      <textarea
+                        value={customInputText || JSON.stringify(effectiveInputItems, null, 2)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCustomInputText(val);
+                          try {
+                            const parsed = JSON.parse(val);
+                            const normalized = Array.isArray(parsed)
+                              ? parsed.map((item) => (item && typeof item === 'object' && 'json' in item ? item : { json: item }))
+                              : [{ json: parsed }];
+                            setCustomInputItems(normalized);
+                            setCustomInputError(null);
+                          } catch (err: any) {
+                            setCustomInputError(`JSON chưa hợp lệ: ${err.message}`);
+                          }
+                        }}
+                        spellCheck={false}
+                        className="flex-1 min-h-[320px] w-full text-xs font-mono text-zinc-100 bg-[#141416] p-3 rounded-lg border border-[#2c2c30] focus:outline-none focus:border-[#e6e8ec] resize-none"
+                      />
+                    </div>
                   )}
                 </div>
               </div>
