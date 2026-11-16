@@ -21,31 +21,27 @@ export class OpenAIProvider implements IAIProvider {
 
   async chat(messages: ILLMMessage[], options?: ILLMOptions): Promise<ILLMResponse> {
     const startTime = Date.now();
-    const apiKey =
-      options?.apiKey ||
-      process.env.OPENCODE2_API_KEY ||
-      process.env.OPENAI_API_KEY ||
-      DEFAULT_OPENCODE2_PROVIDER.apiKey;
-    const model =
-      options?.model ||
-      process.env.OPENCODE2_MODEL ||
-      process.env.OPENAI_MODEL ||
-      DEFAULT_OPENCODE2_PROVIDER.defaultModel;
     const baseUrl = (
       options?.baseUrl ||
       process.env.OPENCODE2_BASE_URL ||
       process.env.OPENAI_BASE_URL ||
       DEFAULT_OPENCODE2_PROVIDER.baseUrl
     ).replace(/\/+$/, '');
+    const isDefaultOpenCode = baseUrl.includes('opencode.ai');
+    const apiKey =
+      options?.apiKey ||
+      (isDefaultOpenCode ? process.env.OPENCODE2_API_KEY || DEFAULT_OPENCODE2_PROVIDER.apiKey : process.env.OPENAI_API_KEY || '');
+    const model =
+      options?.model ||
+      process.env.OPENCODE2_MODEL ||
+      process.env.OPENAI_MODEL ||
+      DEFAULT_OPENCODE2_PROVIDER.defaultModel;
 
     if (!apiKey) {
-      return {
-        text: `[Opencode2 / OpenAI Provider]: API Key chưa được cung cấp. Vui lòng cấu hình trong VinceAuto Credentials.`,
-        model,
-        provider: 'openai',
-        durationMs: Date.now() - startTime,
-      };
+      throw new Error(`Chưa nhập API Key cho endpoint ${baseUrl}.`);
     }
+
+    const endpoint = baseUrl.endsWith('/chat/completions') ? baseUrl : `${baseUrl}/chat/completions`;
 
     try {
       const formattedMessages = messages.map((m) => ({
@@ -54,7 +50,7 @@ export class OpenAIProvider implements IAIProvider {
       }));
 
       const res = await axios.post(
-        `${baseUrl}/chat/completions`,
+        endpoint,
         {
           model,
           messages: formattedMessages,

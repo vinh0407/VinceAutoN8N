@@ -13,6 +13,10 @@ export class AIModelRouter {
     const openAiProvider = new OpenAIProvider();
     this.providers.set('openai', openAiProvider);
     this.providers.set('opencode2', openAiProvider);
+    this.providers.set('deepseek', openAiProvider);
+    this.providers.set('groq', openAiProvider);
+    this.providers.set('openrouter', openAiProvider);
+    this.providers.set('custom', openAiProvider);
     this.providers.set('gemini', new GeminiProvider());
     this.providers.set('claude', new ClaudeProvider());
     this.providers.set('ollama', new OllamaProvider());
@@ -36,8 +40,12 @@ export class AIModelRouter {
     explicitProvider?: string,
     options?: ILLMOptions
   ): Promise<ILLMResponse> {
-    if (explicitProvider && this.providers.has(explicitProvider.toLowerCase())) {
-      return this.providers.get(explicitProvider.toLowerCase())!.chat(messages, options);
+    const exp = explicitProvider?.toLowerCase();
+    if (exp && this.providers.has(exp)) {
+      return this.providers.get(exp)!.chat(messages, options);
+    }
+    if (options?.baseUrl) {
+      return this.providers.get('openai')!.chat(messages, options);
     }
 
     let providerOrder: string[] = [];

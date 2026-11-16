@@ -616,6 +616,50 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
         });
       }
     } catch (err: any) {
+      // Fallback: if backend hasn't been redeployed yet (404), test OpenAI-compatible endpoint directly
+      if (err.response?.status === 404) {
+        try {
+          const base = (parameters.baseUrl || 'https://opencode.ai/zen/v1').trim().replace(/\/+$/, '');
+          const endpoint = base.endsWith('/chat/completions') ? base : `${base}/chat/completions`;
+          const activeModel =
+            isCustomModelMode || parameters.model === 'custom'
+              ? parameters.customModel || 'crouton-alpha-free'
+              : parameters.model || 'crouton-alpha-free';
+          const t0 = Date.now();
+          const direct = await axios.post(
+            endpoint,
+            {
+              model: activeModel,
+              messages: [{ role: 'user', content: 'Reply "OK"' }],
+              max_tokens: 16,
+            },
+            {
+              headers: {
+                ...(parameters.apiKey ? { Authorization: `Bearer ${parameters.apiKey}` } : {}),
+                'Content-Type': 'application/json',
+              },
+              timeout: 20000,
+            }
+          );
+          const reply = direct.data?.choices?.[0]?.message?.content || 'OK';
+          setTestAiResult({
+            success: true,
+            message: `Kết nối thành công! (${Date.now() - t0}ms)`,
+            durationMs: Date.now() - t0,
+            reply,
+          });
+          return;
+        } catch (directErr: any) {
+          setTestAiResult({
+            success: false,
+            message:
+              directErr.response?.data?.error?.message ||
+              directErr.message ||
+              'Backend chưa có route /api/ai/test-connection (404) và gọi trực tiếp thất bại.',
+          });
+          return;
+        }
+      }
       setTestAiResult({
         success: false,
         message: err.response?.data?.error || err.message || 'Không thể kết nối API',
