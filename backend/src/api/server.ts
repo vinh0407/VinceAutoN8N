@@ -13,6 +13,7 @@ import { SelfHealingEngine } from '../ai/self-healing.js';
 import { globalAIRouter } from '../ai/router.js';
 import { globalCronScheduler } from '../scheduler/cron-manager.js';
 import { globalTelegramPoller } from '../scheduler/telegram-poller.js';
+import { globalCloudBackup } from '../storage/cloud-backup.js';
 
 export function createServer() {
   const app = express();
@@ -117,6 +118,7 @@ export function createServer() {
     const saved = globalWorkflowStore.saveWorkflow(workflow);
     globalCronScheduler.refresh();
     globalTelegramPoller.refresh();
+    void globalCloudBackup.push();
     res.json({ success: true, workflow: saved });
   });
 
@@ -125,6 +127,7 @@ export function createServer() {
     if (ok) {
       globalCronScheduler.refresh();
       globalTelegramPoller.refresh();
+      void globalCloudBackup.push();
     }
     res.json({ success: ok });
   });
@@ -136,11 +139,33 @@ export function createServer() {
     const saved = globalWorkflowStore.saveWorkflow({ ...wf, active: Boolean(req.body?.active) });
     globalCronScheduler.refresh();
     globalTelegramPoller.refresh();
+    void globalCloudBackup.push();
     res.json({ success: true, workflow: saved, listeners: globalTelegramPoller.getStatus() });
   });
 
   app.get('/api/telegram/status', (req, res) => {
     res.json({ success: true, listeners: globalTelegramPoller.getStatus() });
+  });
+
+  // Cloud / GitHub Backup endpoints (lets user link GitHub right in the UI)
+  app.get('/api/backup/status', (req, res) => {
+    res.json({ success: true, ...globalCloudBackup.status(), listeners: globalTelegramPoller.getStatus() });
+  });
+
+  app.post('/api/backup/github', async (req, res) => {
+    const { token, gistId } = req.body || {};
+    const result = await globalCloudBackup.configure(String(token || ''), gistId ? String(gistId) : undefined);
+    if (!result.ok) {
+      return res.status(400).json({ success: false, error: result.error });
+    }
+    globalCronScheduler.refresh();
+    globalTelegramPoller.refresh();
+    res.json({ success: true, ...result, listeners: globalTelegramPoller.getStatus() });
+  });
+
+  app.post('/api/backup/sync', async (req, res) => {
+    await globalCloudBackup.push();
+    res.json({ success: true, ...globalCloudBackup.status() });
   });
 
   // 3. Execution

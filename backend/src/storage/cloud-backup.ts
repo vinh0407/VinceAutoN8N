@@ -31,6 +31,37 @@ class CloudBackup {
     return Boolean(this.token);
   }
 
+  /** Configure GitHub token / gistId at runtime (e.g. from UI) and verify with GitHub API. */
+  async configure(token: string, gistId?: string): Promise<{ ok: boolean; gistId?: string; username?: string; error?: string }> {
+    const clean = token.trim();
+    if (!clean) return { ok: false, error: 'Vui lòng nhập GitHub Token (quyền gist).' };
+    try {
+      const userRes = await axios.get(`${API}/user`, {
+        headers: {
+          Authorization: `Bearer ${clean}`,
+          Accept: 'application/vnd.github+json',
+          'User-Agent': 'vinceauto-backup',
+        },
+        timeout: 15000,
+      });
+      this.token = clean;
+      if (gistId && gistId.trim()) this.gistId = gistId.trim();
+      process.env.GITHUB_BACKUP_TOKEN = clean;
+      const ensuredId = await this.ensureGist();
+      // Push local state right away if local has workflows, else restore from Gist
+      const hasLocalWf = globalWorkflowStore.getWorkflows().length > 0 || globalWorkflowStore.getProjects().length > 0;
+      if (hasLocalWf) {
+        await this.push();
+      } else {
+        await this.restore();
+      }
+      this.startAutoSync();
+      return { ok: true, gistId: ensuredId || undefined, username: userRes.data?.login };
+    } catch (err: any) {
+      return { ok: false, error: err.response?.data?.message || err.message || 'Token GitHub không hợp lệ' };
+    }
+  }
+
   private headers() {
     return {
       Authorization: `Bearer ${this.token}`,

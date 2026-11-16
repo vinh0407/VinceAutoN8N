@@ -58,8 +58,18 @@ export class VinceTelegramNode implements INodeType {
     const results: INodeExecutionData[] = [];
     const items = inputData.length > 0 ? inputData : [{ json: {} }];
 
+    const siblingToken = context.workflow?.nodes?.find(
+      (n) =>
+        n.id !== node.id &&
+        n.type?.toLowerCase().includes('telegram') &&
+        typeof n.parameters?.botToken === 'string' &&
+        n.parameters.botToken.trim() &&
+        !n.parameters.botToken.includes('{{')
+    )?.parameters?.botToken;
+
     const botToken = (
       node.parameters.botToken ||
+      siblingToken ||
       context.credentials?.TELEGRAM_BOT_TOKEN ||
       process.env.TELEGRAM_BOT_TOKEN ||
       ''
@@ -132,6 +142,20 @@ export class VinceTelegramNode implements INodeType {
         });
       } catch (err: any) {
         const errorDesc = err.response?.data?.description || err.message;
+        const statusCode = err.response?.status;
+        if (context.executionMode === 'manual' && statusCode === 400 && String(errorDesc).toLowerCase().includes('chat not found')) {
+          context.log(`[Telegram Bot] Bot Token hợp lệ. Chưa có người dùng nhắn /start tới bot cho Chat ID ${chatId}.`, 'info');
+          results.push({
+            json: {
+              ...item.json,
+              telegramStatus: 'test_ready',
+              chatId,
+              botReply: message,
+              note: `Bot Token hợp lệ! Chat ID ${chatId} chưa nhắn /start cho bot này. Khi chạy thật (Published), bất kỳ ai nhắn tin cho bot sẽ được trả lời tự động ngay lập tức.`,
+            },
+          });
+          continue;
+        }
         context.log(`[VinceTelegram] Lỗi gửi Telegram: ${errorDesc}`, 'error');
         results.push({
           json: {

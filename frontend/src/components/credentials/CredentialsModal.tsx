@@ -25,6 +25,15 @@ export const CredentialsModal: React.FC<CredentialsModalProps> = ({ onClose }) =
   const [isSaving, setIsSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isCustomModel, setIsCustomModel] = useState(false);
+  const [githubToken, setGithubToken] = useState('');
+  const [githubGistId, setGithubGistId] = useState('');
+  const [backupStatus, setBackupStatus] = useState<{ enabled: boolean; gistId: string | null; listenersCount: number }>({
+    enabled: false,
+    gistId: null,
+    listenersCount: 0,
+  });
+  const [isLinkingGithub, setIsLinkingGithub] = useState(false);
+  const [githubMsg, setGithubMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const standardModels = [
     { value: 'crouton-alpha-free', label: 'crouton-alpha-free (Opencode2 Miễn phí)' },
@@ -56,7 +65,50 @@ export const CredentialsModal: React.FC<CredentialsModalProps> = ({ onClose }) =
         }));
       }
     });
+    axios.get('/api/backup/status').then((res) => {
+      if (res.data?.success) {
+        setBackupStatus({
+          enabled: Boolean(res.data.enabled),
+          gistId: res.data.gistId || null,
+          listenersCount: Array.isArray(res.data.listeners) ? res.data.listeners.length : 0,
+        });
+        if (res.data.gistId) setGithubGistId(res.data.gistId);
+      }
+    }).catch(() => {});
   }, []);
+
+  const handleLinkGithub = async () => {
+    if (!githubToken.trim()) {
+      setGithubMsg({ ok: false, text: 'Vui lòng nhập GitHub Personal Access Token (quyền gist).' });
+      return;
+    }
+    setIsLinkingGithub(true);
+    setGithubMsg(null);
+    try {
+      const res = await axios.post('/api/backup/github', {
+        token: githubToken.trim(),
+        gistId: githubGistId.trim() || undefined,
+      });
+      if (res.data?.success) {
+        setBackupStatus({
+          enabled: true,
+          gistId: res.data.gistId || null,
+          listenersCount: Array.isArray(res.data.listeners) ? res.data.listeners.length : 0,
+        });
+        if (res.data.gistId) setGithubGistId(res.data.gistId);
+        setGithubMsg({
+          ok: true,
+          text: `Đã liên kết GitHub (@${res.data.username || 'user'}) & đồng bộ Gist: ${res.data.gistId}`,
+        });
+      } else {
+        setGithubMsg({ ok: false, text: res.data?.error || 'Không thể liên kết GitHub.' });
+      }
+    } catch (err: any) {
+      setGithubMsg({ ok: false, text: err.response?.data?.error || err.message || 'Lỗi kết nối GitHub.' });
+    } finally {
+      setIsLinkingGithub(false);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -360,6 +412,66 @@ export const CredentialsModal: React.FC<CredentialsModalProps> = ({ onClose }) =
               placeholder="vz_live_..."
               className="w-full bg-[#202024] border border-[#303036] rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#e6e8ec]"
             />
+          </div>
+
+          {/* GitHub Cloud Sync (24/7 Persistence) */}
+          <div className="p-4 rounded-xl bg-[#161c24] border border-[#28384c] space-y-2.5">
+            <div className="flex items-center justify-between border-b border-[#253244] pb-2">
+              <span className="text-xs font-bold text-sky-300">Liên kết GitHub (Lưu trữ dự án & Published 24/7)</span>
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                  backupStatus.enabled
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                    : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                }`}
+              >
+                {backupStatus.enabled ? '✓ Đã liên kết GitHub' : 'Chưa liên kết'}
+              </span>
+            </div>
+            <p className="text-[11px] text-zinc-400 leading-relaxed">
+              Dán GitHub Token (quyền <code className="text-sky-300 font-mono">gist</code>) để đồng bộ tự động mọi bản vẽ, trạng thái <strong>Published</strong> và API Keys lên GitHub Gist riêng tư — không bị mất khi Render reset.
+              {backupStatus.listenersCount > 0 && (
+                <span className="block text-emerald-400 mt-1">
+                  • Đang chạy nền 24/7 cho {backupStatus.listenersCount} bot Telegram.
+                </span>
+              )}
+            </p>
+            <input
+              type="password"
+              value={githubToken}
+              onChange={(e) => setGithubToken(e.target.value)}
+              placeholder="ghp_... (GitHub Token với quyền gist)"
+              className="w-full bg-[#12161c] border border-[#2a384a] rounded-lg px-3 py-1.5 text-xs text-white font-mono placeholder-zinc-500 focus:outline-none focus:border-sky-400"
+            />
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                value={githubGistId}
+                onChange={(e) => setGithubGistId(e.target.value)}
+                placeholder="Gist ID (tùy chọn - tự tạo nếu để trống)"
+                className="flex-1 bg-[#12161c] border border-[#2a384a] rounded-lg px-3 py-1.5 text-xs text-white font-mono placeholder-zinc-500 focus:outline-none focus:border-sky-400"
+              />
+              <button
+                type="button"
+                onClick={handleLinkGithub}
+                disabled={isLinkingGithub}
+                className="px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-zinc-900 font-bold text-xs flex items-center space-x-1.5 disabled:opacity-50 shrink-0 cursor-pointer"
+              >
+                {isLinkingGithub && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>{isLinkingGithub ? 'Đang đồng bộ...' : 'Liên kết & Đồng bộ'}</span>
+              </button>
+            </div>
+            {githubMsg && (
+              <div
+                className={`p-2 rounded-lg text-[11px] ${
+                  githubMsg.ok
+                    ? 'bg-emerald-950/70 border border-emerald-500/40 text-emerald-300'
+                    : 'bg-rose-950/70 border border-rose-500/40 text-rose-300'
+                }`}
+              >
+                {githubMsg.text}
+              </div>
+            )}
           </div>
 
           {/* Submit button */}
