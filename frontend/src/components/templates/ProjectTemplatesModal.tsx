@@ -926,10 +926,40 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
   onClose,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('VINCEAUTO_FEATURED');
+  const [featuredTopic, setFeaturedTopic] = useState<'all' | 'chatbot' | 'social' | 'business'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [previewTemplate, setPreviewTemplate] = useState<IN8nTemplateItem | null>(
     allTemplates[0] || null
   );
+
+  const [ownerName, setOwnerName] = useState<string>(() => {
+    try {
+      return localStorage.getItem('vinceauto:owner_name') || 'Vinh Ưng';
+    } catch {
+      return 'Vinh Ưng';
+    }
+  });
+  const [telegramChatId, setTelegramChatId] = useState<string>(() => {
+    try {
+      return localStorage.getItem('vinceauto:telegram_chat_id') || '1869249751';
+    } catch {
+      return '1869249751';
+    }
+  });
+  const [facebookPageId, setFacebookPageId] = useState<string>(() => {
+    try {
+      return localStorage.getItem('vinceauto:fb_page_id') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [geminiApiKey, setGeminiApiKey] = useState<string>(() => {
+    try {
+      return localStorage.getItem('vinceauto:gemini_api_key') || '';
+    } catch {
+      return '';
+    }
+  });
 
   // Group categories with counts, keeping VINCEAUTO_FEATURED at the top
   const categories = useMemo(() => {
@@ -959,6 +989,12 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
       if (selectedCategory !== 'ALL' && tpl.category !== selectedCategory) {
         return false;
       }
+      if (selectedCategory === 'VINCEAUTO_FEATURED' && featuredTopic !== 'all') {
+        const dept = (tpl.departmentVi || '').toLowerCase();
+        if (featuredTopic === 'chatbot' && !dept.includes('chatbot')) return false;
+        if (featuredTopic === 'social' && !dept.includes('social') && !dept.includes('content') && !dept.includes('cskh')) return false;
+        if (featuredTopic === 'business' && !dept.includes('tmđt') && !dept.includes('tài chính')) return false;
+      }
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       return (
@@ -970,29 +1006,42 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
         tpl.nodeNames.some((n) => n.toLowerCase().includes(q))
       );
     });
-  }, [selectedCategory, searchQuery]);
+  }, [selectedCategory, featuredTopic, searchQuery]);
 
   const handleApplyTemplate = (tpl: IN8nTemplateItem) => {
     const optimized = optimizeTemplateForVinceAuto(tpl);
-    let savedGeminiKey = '';
+    const cleanKey = geminiApiKey.trim();
+    const cleanChatId = telegramChatId.trim() || '1869249751';
+    const cleanOwner = ownerName.trim() || 'Vinh Ưng';
+    const cleanPageId = facebookPageId.trim();
+
     try {
-      savedGeminiKey = (localStorage.getItem('vinceauto:gemini_api_key') || '').trim();
+      localStorage.setItem('vinceauto:owner_name', cleanOwner);
+      localStorage.setItem('vinceauto:telegram_chat_id', cleanChatId);
+      if (cleanPageId) localStorage.setItem('vinceauto:fb_page_id', cleanPageId);
+      if (cleanKey) localStorage.setItem('vinceauto:gemini_api_key', cleanKey);
     } catch {
-      savedGeminiKey = '';
+      // ignore storage errors
     }
 
     const personalizedNodes = optimized.nodes.map((n) => {
       const params = { ...(n.parameters || {}) };
       if (n.type === 'vince.modelRouter' || n.type === 'vince.agentManager' || n.type.startsWith('ai.')) {
-        if (savedGeminiKey && !params.apiKey) {
-          params.apiKey = savedGeminiKey;
+        if (cleanKey && !params.apiKey) {
+          params.apiKey = cleanKey;
+        }
+        if (typeof params.systemPrompt === 'string' && !params.systemPrompt.includes(cleanOwner)) {
+          params.systemPrompt = `${params.systemPrompt} (Trợ lý cá nhân của ${cleanOwner})`;
         }
       }
       if (n.type === 'vince.telegram') {
         const cid = String(params.chatId || '').trim();
         if (!cid || cid === '{{ $json.chatId || $json.message.chat.id }}') {
-          params.chatId = '{{ $json.chatId || $json.message?.chat?.id || "1869249751" }}';
+          params.chatId = `{{ $json.chatId || $json.message?.chat?.id || "${cleanChatId}" }}`;
         }
+      }
+      if ((n.type === 'vince.facebook.video' || n.type === 'vince.facebook.postFeed') && cleanPageId) {
+        params.pageId = cleanPageId;
       }
       return { ...n, parameters: params };
     });
@@ -1149,8 +1198,32 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
             </div>
           )}
 
-          {/* Center Grid: Clean, Spacious Cards */}
-          <div className="flex-1 overflow-y-auto p-4 bg-[#161619] custom-scrollbar">
+          {/* Center Grid: Clean, Easy-to-Use Cards */}
+          <div className="flex-1 overflow-y-auto p-4 bg-[#161619] custom-scrollbar space-y-3">
+            {selectedCategory === 'VINCEAUTO_FEATURED' && (
+              <div className="flex items-center flex-wrap gap-1.5">
+                {[
+                  { id: 'all', label: `Tất cả (${VINCEAUTO_FEATURED_TEMPLATES.length})` },
+                  { id: 'chatbot', label: 'Chatbot AI' },
+                  { id: 'social', label: 'Video & Mạng xã hội' },
+                  { id: 'business', label: 'Bán hàng & Thanh toán' },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setFeaturedTopic(tab.id as any)}
+                    className={`px-3 py-1 rounded-full text-[11px] font-semibold border transition-colors cursor-pointer ${
+                      featuredTopic === tab.id
+                        ? 'bg-sky-500/20 text-sky-200 border-sky-500/40'
+                        : 'bg-[#1d1d22] text-zinc-400 border-[#2c2c34] hover:text-zinc-200'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
               {filteredTemplates.map((tpl) => {
                 const isSelected = previewTemplate?.id === tpl.id;
@@ -1222,14 +1295,63 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
                   </p>
                 </div>
 
-                {/* Prefilled Personalization Card */}
-                <div className="p-3 rounded-xl bg-[#1a1a1f] border border-[#2a2a32] space-y-1.5 text-[11px]">
-                  <div className="flex items-center space-x-1.5 font-semibold text-sky-300">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Thông tin đã nhập sẵn</span>
+                {/* Quick Personalization Form (Prefilled & Editable) */}
+                <div className="p-3 rounded-xl bg-[#1a1a1f] border border-[#2a2a32] space-y-2 text-[11px]">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-1.5 font-semibold text-sky-300">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Cá nhân hóa nhanh cho bạn</span>
+                    </div>
+                    <span className="text-[10px] text-emerald-400 font-medium">Tự động điền vào node</span>
                   </div>
-                  <div className="text-zinc-300">• AI: <span className="font-mono text-zinc-100">Google Gemini</span> ({GEMINI_DEFAULT_CONFIG.models})</div>
-                                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] text-zinc-400 mb-0.5">Tên / Kênh</label>
+                      <input
+                        type="text"
+                        value={ownerName}
+                        onChange={(e) => setOwnerName(e.target.value)}
+                        placeholder="Vinh Ưng"
+                        className="w-full bg-[#131317] border border-[#2d2d36] rounded-md px-2 py-1 text-[11px] text-zinc-100 focus:outline-none focus:border-sky-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-zinc-400 mb-0.5">Telegram ID</label>
+                      <input
+                        type="text"
+                        value={telegramChatId}
+                        onChange={(e) => setTelegramChatId(e.target.value)}
+                        placeholder="1869249751"
+                        className="w-full bg-[#131317] border border-[#2d2d36] rounded-md px-2 py-1 text-[11px] font-mono text-zinc-100 focus:outline-none focus:border-sky-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-zinc-400 mb-0.5">Gemini API Key (để AI chạy ngay)</label>
+                    <input
+                      type="password"
+                      value={geminiApiKey}
+                      onChange={(e) => setGeminiApiKey(e.target.value)}
+                      placeholder="Dán AIza... hoặc để trống dùng key hệ thống"
+                      className="w-full bg-[#131317] border border-[#2d2d36] rounded-md px-2 py-1 text-[11px] font-mono text-zinc-100 focus:outline-none focus:border-sky-400"
+                    />
+                  </div>
+
+                  {previewTemplate.nodes.some((n) => n.type.includes('facebook')) && (
+                    <div>
+                      <label className="block text-[10px] text-zinc-400 mb-0.5">Facebook Page ID đích (tùy chọn)</label>
+                      <input
+                        type="text"
+                        value={facebookPageId}
+                        onChange={(e) => setFacebookPageId(e.target.value)}
+                        placeholder="Nhập Page ID nếu muốn cố định trang đăng"
+                        className="w-full bg-[#131317] border border-[#2d2d36] rounded-md px-2 py-1 text-[11px] font-mono text-zinc-100 focus:outline-none focus:border-sky-400"
+                      />
+                    </div>
+                  )}
+                </div>
 
                 {/* Vertical Flow Steps */}
                 <div className="space-y-2">
@@ -1240,7 +1362,7 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
                     </span>
                   </div>
 
-                  <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1 custom-scrollbar">
+                  <div className="space-y-1.5 max-h-[210px] overflow-y-auto pr-1 custom-scrollbar">
                     {previewTemplate.nodes.map((n, index) => (
                       <div
                         key={n.id || index}
@@ -1251,7 +1373,6 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
                         </span>
                         <div className="min-w-0 flex-1">
                           <div className="text-zinc-200 font-medium truncate">{n.name}</div>
-                          <div className="text-[10px] text-sky-400/90 font-mono truncate">{n.type}</div>
                         </div>
                       </div>
                     ))}
