@@ -60,9 +60,12 @@ export const TriggerAppEventNode = createTriggerNodeClass({
       default: 'telegram',
       options: [
         { name: 'Telegram Bot (Có tin nhắn người dùng / nhóm)', value: 'telegram' },
+        { name: 'Google Sheets (Khi có dòng/link mới)', value: 'googleSheets' },
+        { name: 'Google Drive (Khi có file/video mới)', value: 'googleDrive' },
+        { name: 'Notion (Khi có bài viết mới)', value: 'notion' },
+        { name: 'Gmail (Có email mới khớp bộ lọc)', value: 'gmail' },
         { name: 'Zalo Official Account (Tin nhắn người dùng mới)', value: 'zalo_oa' },
         { name: 'Facebook Messenger (Khách hàng nhắn tin Page)', value: 'fb_messenger' },
-        { name: 'Gmail (Có email mới khớp bộ lọc)', value: 'gmail' },
       ],
       required: true,
     },
@@ -98,6 +101,55 @@ export const TriggerAppEventNode = createTriggerNodeClass({
           text: 'Xin chào AI Agent! Đây là tin nhắn mẫu từ Vinh Ưng (@ungvinh0407).',
         },
         timestamp: new Date().toISOString(),
+      };
+    }
+    if (app === 'googleSheets') {
+      return {
+        triggeredAt: new Date().toISOString(),
+        triggerType: 'trigger.appEvent',
+        app: 'googleSheets',
+        event: node.parameters?.event || 'rowAdded',
+        spreadsheetId: node.parameters?.spreadsheetId || '',
+        range: node.parameters?.range || 'VideoLinks!A:G',
+        platform: 'TikTok',
+        videoUrl: 'https://www.tiktok.com/@example/video/123456789',
+        targetPageId: node.parameters?.targetPageId || '123456789012345',
+        scheduleTime: '2026-11-20 20:00',
+        status: 'PENDING',
+      };
+    }
+    if (app === 'googleDrive') {
+      return {
+        triggeredAt: new Date().toISOString(),
+        triggerType: 'trigger.appEvent',
+        app: 'googleDrive',
+        event: node.parameters?.event || 'fileCreated',
+        fileId: 'drive_file_demo_01',
+        name: 'video-demo.mp4',
+        mimeType: 'video/mp4',
+        webViewLink: 'https://drive.google.com/file/d/drive_file_demo_01/view',
+      };
+    }
+    if (app === 'notion') {
+      return {
+        triggeredAt: new Date().toISOString(),
+        triggerType: 'trigger.appEvent',
+        app: 'notion',
+        event: node.parameters?.event || 'pageAdded',
+        pageId: 'notion_page_demo_01',
+        title: 'Bài viết mới trên Notion',
+        content: 'Nội dung bài viết mẫu từ Notion Database.',
+      };
+    }
+    if (app === 'gmail') {
+      return {
+        triggeredAt: new Date().toISOString(),
+        triggerType: 'trigger.appEvent',
+        app: 'gmail',
+        event: node.parameters?.event || 'newEmail',
+        from: 'partner@example.com',
+        subject: 'Thông báo hợp tác & báo giá mới',
+        body: 'Xin chào, vui lòng kiểm tra thông tin đính kèm.',
       };
     }
     return {

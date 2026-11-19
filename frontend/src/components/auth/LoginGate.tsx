@@ -13,7 +13,13 @@ export const LoginGate: React.FC<LoginGateProps> = ({ children }) => {
   const [configured, setConfigured] = useState(true);
   const [backendOutdated, setBackendOutdated] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState(() => {
+    try {
+      return localStorage.getItem('vinceauto:last_username') || '';
+    } catch {
+      return '';
+    }
+  });
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -70,6 +76,7 @@ export const LoginGate: React.FC<LoginGateProps> = ({ children }) => {
       if (res.data?.success && res.data?.token) {
         const token = String(res.data.token);
         localStorage.setItem(TOKEN_STORAGE_KEY, token);
+        localStorage.setItem('vinceauto:last_username', username.trim());
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         setConfigured(true);
         setAuthenticated(true);

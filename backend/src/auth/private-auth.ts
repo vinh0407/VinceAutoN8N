@@ -55,6 +55,10 @@ function getSigningSecret(): string {
   if (envSecret) return envSecret;
   const fileRec = readAuthFile();
   if (fileRec?.secret) return fileRec.secret;
+  const envCred = `${process.env.AUTH_USERNAME || ''}:${process.env.AUTH_PASSWORD || ''}`.trim();
+  if (envCred !== ':') {
+    return crypto.createHash('sha256').update(envCred).digest('hex');
+  }
   return 'vinceauto-ephemeral-session-secret';
 }
 
