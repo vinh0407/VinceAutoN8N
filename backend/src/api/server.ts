@@ -7,6 +7,7 @@ import fs from 'fs';
 import { WebSocketServer, WebSocket } from 'ws';
 import { globalNodeRegistry } from '../nodes/registry.js';
 import { globalWorkflowStore } from '../storage/store.js';
+import { globalAccountsStore } from '../storage/accounts-store.js';
 import { WorkflowRunner } from '../engine/runner.js';
 import { AIWorkflowBuilder } from '../ai/workflow-builder.js';
 import { SelfHealingEngine } from '../ai/self-healing.js';
@@ -671,6 +672,93 @@ export function createServer() {
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message });
     }
+  });
+
+  // 6b. Multi-Account Hub Routes (Google / Meta / Facebook / Instagram / Threads / TikTok / YouTube / Telegram / Gemini)
+  app.get('/api/accounts', (req, res) => {
+    const platform = typeof req.query.platform === 'string' ? req.query.platform : undefined;
+    res.json({ success: true, accounts: globalAccountsStore.listPublic(platform) });
+  });
+
+  app.post('/api/accounts', async (req, res) => {
+    const { id, platform, label, identifier, token, resources, isDefault } = req.body || {};
+    if (!platform || !label) {
+      return res.status(400).json({ success: false, error: 'Thiếu nền tảng (platform) hoặc tên gợi nhớ (label).' });
+    }
+    let discoveredResources = Array.isArray(resources) ? resources : [];
+
+    // Auto-discover Google Sheets when a Google OAuth token (ya29...) is provided
+    if (platform === 'google' && typeof token === 'string' && token.trim().startsWith('ya29.')) {
+      try {
+        const driveRes = await axios.get('https://www.googleapis.com/drive/v3/files', {
+          headers: { Authorization: `Bearer ${token.trim()}` },
+          params: {
+            q: "mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
+            fields: 'files(id,name)',
+            pageSize: 30,
+          },
+          timeout: 10000,
+        });
+        if (Array.isArray(driveRes.data?.files)) {
+          discoveredResources = driveRes.data.files.map((f: any) => ({
+            id: String(f.id),
+            name: String(f.name),
+            extra: 'Google Sheet',
+          }));
+        }
+      } catch {
+        // Keep manual resources if token doesn't have Drive scope
+      }
+    }
+
+    // Auto-discover Facebook Pages when a Meta User Access Token (EAA...) is provided
+    if (platform === 'facebook' && typeof token === 'string' && token.trim().startsWith('EAA')) {
+      try {
+        const fbRes = await axios.get('https://graph.facebook.com/v20.0/me/accounts', {
+          params: { access_token: token.trim(), fields: 'id,name' },
+          timeout: 10000,
+        });
+        if (Array.isArray(fbRes.data?.data)) {
+          discoveredResources = fbRes.data.data.map((p: any) => ({
+            id: String(p.id),
+            name: String(p.name),
+            extra: 'Facebook Page',
+          }));
+        }
+      } catch {
+        // Keep manual resources if token is already a Page token
+      }
+    }
+
+    const saved = globalAccountsStore.upsert({
+      id,
+      platform,
+      label,
+      identifier,
+      token,
+      resources: discoveredResources,
+      isDefault,
+    });
+    void globalCloudBackup.push();
+    res.json({ success: true, account: { ...saved, token: saved.token ? '••••••' : '' }, discoveredCount: discoveredResources.length });
+  });
+
+  app.post('/api/accounts/:id/resources', (req, res) => {
+    const { id: resId, name, extra } = req.body || {};
+    if (!resId) return res.status(400).json({ success: false, error: 'Thiếu ID dự án / Sheet / Page.' });
+    const matchSheet = String(resId).match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    const matchFolder = String(resId).match(/\/folders\/([a-zA-Z0-9-_]+)/);
+    const cleanId = matchSheet ? matchSheet[1] : matchFolder ? matchFolder[1] : String(resId).trim();
+    const updated = globalAccountsStore.addResource(req.params.id, { id: cleanId, name: name || cleanId, extra });
+    if (!updated) return res.status(404).json({ success: false, error: 'Không tìm thấy tài khoản.' });
+    void globalCloudBackup.push();
+    res.json({ success: true, account: { ...updated, token: updated.token ? '••••••' : '' } });
+  });
+
+  app.delete('/api/accounts/:id', (req, res) => {
+    const ok = globalAccountsStore.remove(req.params.id);
+    if (ok) void globalCloudBackup.push();
+    res.json({ success: ok });
   });
 
   // 7. Credentials Management

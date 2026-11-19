@@ -31,6 +31,7 @@ import { NodeCreatorPanel } from './components/node-creator/NodeCreatorPanel';
 import { AIWorkflowAssistant } from './components/ai-builder/AIWorkflowAssistant';
 import { ExecutionMonitor } from './components/monitor/ExecutionMonitor';
 import { CredentialsModal } from './components/credentials/CredentialsModal';
+import { AccountsHubModal } from './components/credentials/AccountsHubModal';
 import { ExecutionsListModal } from './components/executions/ExecutionsListModal';
 import { ProjectTemplatesModal } from './components/templates/ProjectTemplatesModal';
 import { TasksManagerModal } from './components/tasks/TasksManagerModal';
@@ -114,6 +115,7 @@ export function App() {
   const [selectedChatItem, setSelectedChatItem] = useState<IAIChatHistoryItem | null>(null);
   const [selectedAgentLog, setSelectedAgentLog] = useState<IAIAgentProjectLog | null>(null);
   const [showCredentials, setShowCredentials] = useState(false);
+  const [showAccountsHub, setShowAccountsHub] = useState(false);
   const [showExecutionsList, setShowExecutionsList] = useState(false);
   const [showLogsDrawer, setShowLogsDrawer] = useState(false);
   const [showTemplatesModal, setShowTemplatesModal] = useState(false);
@@ -1053,6 +1055,7 @@ export function App() {
           onOpenTasks={() => setShowTasksModal(true)}
           onOpenVersions={() => setShowVersionsModal(true)}
           onOpenTables={() => setShowTablesModal(true)}
+          onOpenAccounts={() => setShowAccountsHub(true)}
           isRunning={isRunning}
         />
 
@@ -1230,6 +1233,11 @@ export function App() {
           {/* Credentials Modal */}
           {showCredentials && (
             <CredentialsModal onClose={() => setShowCredentials(false)} />
+          )}
+
+          {/* Multi-Account Hub Modal */}
+          {showAccountsHub && (
+            <AccountsHubModal onClose={() => setShowAccountsHub(false)} />
           )}
 
           {/* Executions History Modal */}

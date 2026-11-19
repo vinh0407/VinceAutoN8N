@@ -10,6 +10,7 @@ import {
   Trash2,
   Download,
   Upload,
+  Users,
 } from 'lucide-react';
 import { IWorkflow } from '../../types';
 
@@ -26,6 +27,7 @@ interface N8nWorkflowHeaderProps {
   onOpenTasks?: () => void;
   onOpenVersions?: () => void;
   onOpenTables?: () => void;
+  onOpenAccounts?: () => void;
   isRunning: boolean;
 }
 
@@ -37,6 +39,7 @@ export const N8nWorkflowHeader: React.FC<N8nWorkflowHeaderProps> = ({
   onSave,
   onExecute,
   onExportWorkflow,
+  onOpenAccounts,
   onOpenTasks,
   onOpenVersions,
   onOpenTables,
@@ -124,6 +127,17 @@ export const N8nWorkflowHeader: React.FC<N8nWorkflowHeaderProps> = ({
 
       {/* Right: Publish button & Test Workflow */}
       <div className="flex items-center space-x-2">
+        {onOpenAccounts && (
+          <button
+            onClick={onOpenAccounts}
+            title="Đăng nhập & Quản lý nhiều tài khoản (Google, Facebook, TikTok, YouTube, Instagram, Threads, Telegram)"
+            className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/40 text-xs font-semibold text-sky-200 transition-all cursor-pointer"
+          >
+            <Users className="w-3.5 h-3.5 text-sky-300" />
+            <span>Tài khoản</span>
+          </button>
+        )}
+
         <button
           onClick={onSave}
           title="Save changes"

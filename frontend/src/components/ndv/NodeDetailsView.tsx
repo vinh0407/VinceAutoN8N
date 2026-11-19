@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import type { IConnectedAccount } from '../credentials/AccountsHubModal';
 import {
   X,
   Trash2,
@@ -452,6 +453,18 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
     columns: Array<{ key: string; label: string; example?: string }>;
   } | null>(null);
   const [copiedSheetHeaders, setCopiedSheetHeaders] = useState(false);
+  const [connectedAccounts, setConnectedAccounts] = useState<IConnectedAccount[]>([]);
+
+  useEffect(() => {
+    axios
+      .get('/api/accounts')
+      .then((res) => {
+        if (res.data?.success && Array.isArray(res.data.accounts)) {
+          setConnectedAccounts(res.data.accounts);
+        }
+      })
+      .catch(() => undefined);
+  }, []);
 
   // AI Agent specific node states (independent from system API)
   const [showApiKey, setShowApiKey] = useState(false);
@@ -1419,39 +1432,134 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                     </div>
                   )}
 
-                  {/* 2. Credential Selector */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-zinc-200 block">
-                      Tài khoản kết nối
-                    </label>
-                    <div className="flex items-center space-x-2">
-                      <div className="relative flex-1">
-                        <KeyRound className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-2.5" />
-                        <select
-                          value={parameters.credential || appCatalog?.credentialTitle || 'Tài khoản mặc định'}
-                          onChange={(e) => {
-                            if (e.target.value === '__new__') {
-                              setShowCredentialEditor(true);
-                            } else {
-                              handleFieldChange('credential', e.target.value);
-                            }
-                          }}
-                          className="w-full bg-[#18181b] border border-[#34343a] rounded-md pl-8 pr-8 py-2 text-xs text-zinc-100 focus:outline-none focus:border-[#e6e8ec]"
-                        >
-                          <option value={appCatalog?.credentialTitle || `${nodeName} account`}>
-                            {appCatalog?.credentialTitle || `Tài khoản ${nodeName}`}
-                          </option>
-                          <option value="__new__">+ Nhập Token / API Key khác...</option>
-                        </select>
+                  {/* 2. Multi-Account & Project Resource Selector */}
+                  {(() => {
+                    const lowerT = nodeType.toLowerCase();
+                    const appParam = String(parameters.app || '').toLowerCase();
+                    const detectedPlatform: IConnectedAccount['platform'] | null =
+                      lowerT.includes('googlesheets') ||
+                      lowerT.includes('googledrive') ||
+                      lowerT.includes('gmail') ||
+                      appParam === 'googlesheets' ||
+                      appParam === 'googledrive' ||
+                      appParam === 'gmail'
+                        ? 'google'
+                        : lowerT.includes('youtube')
+                        ? 'youtube'
+                        : lowerT.includes('facebook') || appParam === 'fb_messenger'
+                        ? 'facebook'
+                        : lowerT.includes('instagram')
+                        ? 'instagram'
+                        : lowerT.includes('threads')
+                        ? 'threads'
+                        : lowerT.includes('tiktok')
+                        ? 'tiktok'
+                        : isTelegram || appParam === 'telegram'
+                        ? 'telegram'
+                        : isAiAgent
+                        ? 'gemini'
+                        : null;
+
+                    const matchingAccounts = detectedPlatform
+                      ? connectedAccounts.filter((a) => a.platform === detectedPlatform)
+                      : connectedAccounts;
+                    const selectedAcc =
+                      matchingAccounts.find((a) => a.id === parameters.accountId) ||
+                      matchingAccounts.find((a) => a.isDefault) ||
+                      null;
+
+                    return (
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-zinc-200 block">
+                          Tài khoản kết nối
+                        </label>
+                        <div className="flex items-center space-x-2">
+                          <div className="relative flex-1">
+                            <KeyRound className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-2.5" />
+                            <select
+                              value={parameters.accountId || parameters.credential || appCatalog?.credentialTitle || 'default'}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '__new__') {
+                                  setShowCredentialEditor(true);
+                                  return;
+                                }
+                                const acc = matchingAccounts.find((a) => a.id === val);
+                                if (acc) {
+                                  const nextParams: Record<string, any> = {
+                                    ...parameters,
+                                    accountId: acc.id,
+                                    credential: acc.label,
+                                  };
+                                  if (acc.platform === 'facebook' && acc.identifier) nextParams.pageId = acc.identifier;
+                                  if (acc.platform === 'youtube' && acc.identifier) nextParams.channelId = acc.identifier;
+                                  if (acc.platform === 'instagram' && acc.identifier) nextParams.accountId = acc.identifier;
+                                  if (acc.platform === 'threads' && acc.identifier) nextParams.userId = acc.identifier;
+                                  if (acc.platform === 'tiktok' && acc.identifier) nextParams.openId = acc.identifier;
+                                  if (acc.platform === 'google' && lowerT.includes('gmail') && acc.identifier) nextParams.to = acc.identifier;
+                                  if (acc.platform === 'google' && acc.resources?.length === 1 && (lowerT.includes('googlesheets') || appParam === 'googlesheets')) {
+                                    nextParams.spreadsheetId = acc.resources[0].id;
+                                  }
+                                  onUpdateParameters(node.id, nextParams);
+                                } else {
+                                  handleFieldChange('credential', val);
+                                }
+                              }}
+                              className="w-full bg-[#18181b] border border-[#34343a] rounded-md pl-8 pr-8 py-2 text-xs text-zinc-100 focus:outline-none focus:border-[#e6e8ec]"
+                            >
+                              {matchingAccounts.length > 0 ? (
+                                matchingAccounts.map((acc) => (
+                                  <option key={acc.id} value={acc.id}>
+                                    {acc.label} {acc.identifier ? `(${acc.identifier})` : ''} {acc.isDefault ? '★' : ''}
+                                  </option>
+                                ))
+                              ) : (
+                                <option value={appCatalog?.credentialTitle || 'default'}>
+                                  {appCatalog?.credentialTitle || `Tài khoản ${nodeName}`}
+                                </option>
+                              )}
+                              <option value="__new__">+ Nhập Token / API Key khác...</option>
+                            </select>
+                          </div>
+                          <button
+                            onClick={() => setShowCredentialEditor(!showCredentialEditor)}
+                            title="Chỉnh sửa thông tin xác thực (Credential)"
+                            className="p-2 rounded-md text-zinc-400 hover:text-white hover:bg-[#2e2e34] transition-colors"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {selectedAcc && selectedAcc.resources && selectedAcc.resources.length > 0 && (
+                          <div className="p-2.5 rounded-lg bg-[#151c24] border border-[#24364a] space-y-1">
+                            <label className="block text-[11px] font-semibold text-sky-300">
+                              Chọn Dự án / Sheet / Trang từ "{selectedAcc.label}" ({selectedAcc.resources.length} có sẵn):
+                            </label>
+                            <select
+                              value={parameters.spreadsheetId || parameters.pageId || ''}
+                              onChange={(e) => {
+                                const resId = e.target.value;
+                                if (!resId) return;
+                                if (lowerT.includes('facebook') || appParam === 'fb_messenger') {
+                                  handleFieldChange('pageId', resId);
+                                } else {
+                                  handleFieldChange('spreadsheetId', resId);
+                                }
+                              }}
+                              className="w-full bg-[#10141a] border border-[#2a3f56] rounded-md px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-sky-400"
+                            >
+                              <option value="">-- Chọn dự án / bảng tính để chạy --</option>
+                              {selectedAcc.resources.map((r) => (
+                                <option key={r.id} value={r.id}>
+                                  {r.name} ({r.id.slice(0, 14)}...)
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
                       </div>
-                      <button
-                        onClick={() => setShowCredentialEditor(!showCredentialEditor)}
-                        title="Chỉnh sửa thông tin xác thực (Credential)"
-                        className="p-2 rounded-md text-zinc-400 hover:text-white hover:bg-[#2e2e34] transition-colors"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                    );
+                  })()}
 
                     {showCredentialEditor && (
                       <div className="mt-2 p-3 rounded-lg bg-[#18181b] border border-[#383840] space-y-2.5 animate-in fade-in duration-100">
@@ -1484,7 +1592,6 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                         </div>
                       </div>
                     )}
-                  </div>
 
                   {/* 4. FULL TRIGGER ON / ACTION RESOURCE & OPERATION SELECTOR */}
                   {isTrigger ? (
