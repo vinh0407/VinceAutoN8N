@@ -212,6 +212,22 @@ function resolveAppCatalogForNode(node: any): IAppCatalogItem | null {
 
 export const AI_PROVIDERS_PRESETS = [
   {
+    id: 'orcarouter',
+    name: 'OrcaRouter',
+    badge: 'Free / Gateway',
+    baseUrl: 'https://api.orcarouter.ai/v1',
+    defaultModel: 'orcarouter/free',
+    models: [
+      { name: 'orcarouter/free (Auto Free)', value: 'orcarouter/free' },
+      { name: 'z-ai/glm-5.3-flash-free', value: 'z-ai/glm-5.3-flash-free' },
+      { name: 'tencent/hy4-preview-free', value: 'tencent/hy4-preview-free' },
+      { name: 'deepseek/deepseek-v4.1-flash-free', value: 'deepseek/deepseek-v4.1-flash-free' },
+      { name: 'deepseek/deepseek-v4-flash-free', value: 'deepseek/deepseek-v4-flash-free' },
+      { name: 'tencent/hy3-free', value: 'tencent/hy3-free' },
+    ],
+    placeholderKey: 'sk-orca-... (OrcaRouter API Key)',
+  },
+  {
     id: 'kilo',
     name: 'Kilo Gateway',
     badge: 'Free / Gateway',
@@ -2014,6 +2030,7 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                         <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-[10px]">
                           <span className="text-zinc-400">Gợi ý nhanh:</span>
                           {[
+                            { label: 'OrcaRouter (Free)', url: 'https://api.orcarouter.ai/v1' },
                             { label: 'OpenCode2 (Free)', url: 'https://opencode.ai/zen/v1' },
                             { label: 'OpenAI', url: 'https://api.openai.com/v1' },
                             { label: 'DeepSeek', url: 'https://api.deepseek.com/v1' },

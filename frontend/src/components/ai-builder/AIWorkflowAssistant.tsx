@@ -324,6 +324,16 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
                 <button
                   type="button"
                   onClick={() => {
+                    setCustomBaseUrl('https://api.orcarouter.ai/v1');
+                    setSelectedModel('orcarouter/free');
+                  }}
+                  className="px-1.5 py-0.5 rounded text-[9.5px] bg-[#26262b] hover:bg-[#323238] text-zinc-300 font-mono"
+                >
+                  OrcaRouter
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
                     setCustomBaseUrl('https://ai-gateway.kilo.ai/api/v1');
                     setSelectedModel('kilo-auto/free');
                   }}
@@ -421,6 +431,14 @@ export const AIWorkflowAssistant: React.FC<AIWorkflowAssistantProps> = ({
                     <option value="gemini-3.1-flash-lite-preview">gemini-3.1-flash-lite-preview (Gemini 3.1 Flash Lite - Khuyên dùng)</option>
                     <option value="gemini-3-flash-preview">gemini-3-flash-preview (Gemini 3 Flash Preview)</option>
                     <option value="gemini-pro-latest">gemini-pro-latest (Gemini Pro - Suy luận sâu)</option>
+                  </optgroup>
+                  <optgroup label="OrcaRouter (Miễn phí - OpenAI-compatible)">
+                    <option value="orcarouter/free">orcarouter/free (OrcaRouter Auto Free)</option>
+                    <option value="z-ai/glm-5.3-flash-free">z-ai/glm-5.3-flash-free</option>
+                    <option value="tencent/hy4-preview-free">tencent/hy4-preview-free</option>
+                    <option value="deepseek/deepseek-v4.1-flash-free">deepseek/deepseek-v4.1-flash-free</option>
+                    <option value="deepseek/deepseek-v4-flash-free">deepseek/deepseek-v4-flash-free</option>
+                    <option value="tencent/hy3-free">tencent/hy3-free</option>
                   </optgroup>
                   <optgroup label="Kilo Gateway (Miễn phí)">
                     <option value="kilo-auto/free">kilo-auto/free (Kilo Auto Free)</option>
