@@ -450,22 +450,40 @@ export const CredentialsModal: React.FC<CredentialsModalProps> = ({ onClose }) =
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[11px] font-medium text-zinc-300">Google Sheet ID mặc định</label>
+                <label className="text-[11px] font-medium text-zinc-300 flex items-center justify-between">
+                  <span>Link / ID Google Sheet mặc định</span>
+                  <a href="https://docs.google.com/spreadsheets" target="_blank" rel="noreferrer" className="text-[10px] text-sky-300 hover:underline">
+                    Mở Sheets ↗
+                  </a>
+                </label>
                 <input
                   type="text"
                   value={credentials.GOOGLE_SHEET_ID}
-                  onChange={(e) => setCredentials({ ...credentials, GOOGLE_SHEET_ID: e.target.value })}
-                  placeholder="1BxiMVs0..."
+                  onChange={(e) => {
+                    const raw = e.target.value.trim();
+                    const match = raw.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+                    setCredentials({ ...credentials, GOOGLE_SHEET_ID: match ? match[1] : raw });
+                  }}
+                  placeholder="Dán link Google Sheet hoặc ID..."
                   className="w-full bg-[#13151a] border border-[#2d323e] rounded-lg px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-amber-400"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[11px] font-medium text-zinc-300">Google Drive Folder ID</label>
+                <label className="text-[11px] font-medium text-zinc-300 flex items-center justify-between">
+                  <span>Link / ID Thư mục Google Drive</span>
+                  <a href="https://drive.google.com" target="_blank" rel="noreferrer" className="text-[10px] text-sky-300 hover:underline">
+                    Mở Drive ↗
+                  </a>
+                </label>
                 <input
                   type="text"
                   value={credentials.GOOGLE_DRIVE_FOLDER_ID}
-                  onChange={(e) => setCredentials({ ...credentials, GOOGLE_DRIVE_FOLDER_ID: e.target.value })}
-                  placeholder="VinceAuto_Videos"
+                  onChange={(e) => {
+                    const raw = e.target.value.trim();
+                    const match = raw.match(/\/folders\/([a-zA-Z0-9-_]+)/);
+                    setCredentials({ ...credentials, GOOGLE_DRIVE_FOLDER_ID: match ? match[1] : raw });
+                  }}
+                  placeholder="Dán link thư mục Drive hoặc ID..."
                   className="w-full bg-[#13151a] border border-[#2d323e] rounded-lg px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-amber-400"
                 />
               </div>

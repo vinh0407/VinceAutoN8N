@@ -1597,14 +1597,32 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                   {/* Quick Google Sheets Config when node is Google Sheets Trigger / Action */}
                   {(parameters.app === 'googleSheets' || nodeType.toLowerCase().includes('googlesheets')) && (
                     <div className="p-3 rounded-xl bg-[#161f1b] border border-[#244032] space-y-2.5 text-xs">
-                      <div className="font-semibold text-emerald-300 text-[11px]">Cấu hình Google Sheets</div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-emerald-300 text-[11px]">Cấu hình Google Sheets</span>
+                        <a
+                          href={
+                            parameters.spreadsheetId
+                              ? `https://docs.google.com/spreadsheets/d/${parameters.spreadsheetId}/edit`
+                              : 'https://docs.google.com/spreadsheets'
+                          }
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[10.5px] text-sky-300 hover:underline"
+                        >
+                          {parameters.spreadsheetId ? 'Mở Sheet này ↗' : 'Mở Google Sheets ↗'}
+                        </a>
+                      </div>
                       <div className="space-y-1">
-                        <label className="block text-[11px] text-zinc-300">Google Sheet ID</label>
+                        <label className="block text-[11px] text-zinc-300">Link Google Sheet hoặc Sheet ID</label>
                         <input
                           type="text"
                           value={parameters.spreadsheetId ?? ''}
-                          onChange={(e) => handleFieldChange('spreadsheetId', e.target.value)}
-                          placeholder="Dán ID Google Sheet (lấy từ link /d/<ID>/edit)..."
+                          onChange={(e) => {
+                            const raw = e.target.value.trim();
+                            const match = raw.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+                            handleFieldChange('spreadsheetId', match ? match[1] : raw);
+                          }}
+                          placeholder="Dán nguyên link https://docs.google.com/spreadsheets/d/... hoặc ID"
                           className="w-full bg-[#111614] border border-[#283d32] rounded-md px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-emerald-400"
                         />
                       </div>

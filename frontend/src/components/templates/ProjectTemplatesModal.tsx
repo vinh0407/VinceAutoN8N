@@ -1549,12 +1549,16 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] text-zinc-400 mb-0.5">Google Sheet ID</label>
+                      <label className="block text-[10px] text-zinc-400 mb-0.5">Link / ID Google Sheet</label>
                       <input
                         type="text"
                         value={googleSheetId}
-                        onChange={(e) => setGoogleSheetId(e.target.value)}
-                        placeholder="Dán ID Google Sheet..."
+                        onChange={(e) => {
+                          const raw = e.target.value.trim();
+                          const match = raw.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+                          setGoogleSheetId(match ? match[1] : raw);
+                        }}
+                        placeholder="Dán nguyên link hoặc ID Sheet..."
                         className="w-full bg-[#131317] border border-[#2d2d36] rounded-md px-2 py-1 text-[11px] font-mono text-zinc-100 focus:outline-none focus:border-sky-400"
                       />
                     </div>
