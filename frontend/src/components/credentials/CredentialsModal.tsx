@@ -19,6 +19,17 @@ export const CredentialsModal: React.FC<CredentialsModalProps> = ({ onClose }) =
     OLLAMA_BASE_URL: 'http://localhost:11434',
     TELEGRAM_BOT_TOKEN: '',
     VINCEZONE_API_KEY: '',
+    OWNER_EMAIL: '',
+    GOOGLE_SHEET_ID: '',
+    GOOGLE_DRIVE_FOLDER_ID: 'VinceAuto_Videos',
+    YOUTUBE_CHANNEL_ID: '',
+    YOUTUBE_API_KEY: '',
+    META_ACCESS_TOKEN: '',
+    FACEBOOK_PAGE_ID: '',
+    INSTAGRAM_ACCOUNT_ID: '',
+    THREADS_USER_ID: '',
+    TIKTOK_OPEN_ID: '',
+    TIKTOK_ACCESS_TOKEN: '',
   });
 
   const [maskedInfo, setMaskedInfo] = useState<Record<string, string>>({});
@@ -62,6 +73,14 @@ export const CredentialsModal: React.FC<CredentialsModalProps> = ({ onClose }) =
           OPENCODE2_MODEL: c.OPENCODE2_MODEL || prev.OPENCODE2_MODEL,
           OPENCODE2_API_KEY: c.OPENCODE2_API_KEY || prev.OPENCODE2_API_KEY,
           OLLAMA_BASE_URL: c.OLLAMA_BASE_URL || prev.OLLAMA_BASE_URL,
+          OWNER_EMAIL: c.OWNER_EMAIL || prev.OWNER_EMAIL,
+          GOOGLE_SHEET_ID: c.GOOGLE_SHEET_ID || prev.GOOGLE_SHEET_ID,
+          GOOGLE_DRIVE_FOLDER_ID: c.GOOGLE_DRIVE_FOLDER_ID || prev.GOOGLE_DRIVE_FOLDER_ID,
+          YOUTUBE_CHANNEL_ID: c.YOUTUBE_CHANNEL_ID || prev.YOUTUBE_CHANNEL_ID,
+          FACEBOOK_PAGE_ID: c.FACEBOOK_PAGE_ID || c.FB_PAGE_ID || prev.FACEBOOK_PAGE_ID,
+          INSTAGRAM_ACCOUNT_ID: c.INSTAGRAM_ACCOUNT_ID || prev.INSTAGRAM_ACCOUNT_ID,
+          THREADS_USER_ID: c.THREADS_USER_ID || prev.THREADS_USER_ID,
+          TIKTOK_OPEN_ID: c.TIKTOK_OPEN_ID || prev.TIKTOK_OPEN_ID,
         }));
       }
     });
@@ -412,6 +431,151 @@ export const CredentialsModal: React.FC<CredentialsModalProps> = ({ onClose }) =
               placeholder="vz_live_..."
               className="w-full bg-[#202024] border border-[#303036] rounded-xl px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#e6e8ec]"
             />
+          </div>
+
+          {/* Tài khoản Google & YouTube mặc định */}
+          <div className="p-4 rounded-xl bg-[#191c22] border border-[#2c3340] space-y-3">
+            <div className="text-xs font-bold text-amber-300 border-b border-[#272e3a] pb-1.5">
+              Tài khoản Google Workspace & YouTube mặc định
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-zinc-300">Email Google (Gmail / Drive / Sheets)</label>
+                <input
+                  type="email"
+                  value={credentials.OWNER_EMAIL}
+                  onChange={(e) => setCredentials({ ...credentials, OWNER_EMAIL: e.target.value })}
+                  placeholder="your-gmail@gmail.com"
+                  className="w-full bg-[#13151a] border border-[#2d323e] rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-zinc-300">Google Sheet ID mặc định</label>
+                <input
+                  type="text"
+                  value={credentials.GOOGLE_SHEET_ID}
+                  onChange={(e) => setCredentials({ ...credentials, GOOGLE_SHEET_ID: e.target.value })}
+                  placeholder="1BxiMVs0..."
+                  className="w-full bg-[#13151a] border border-[#2d323e] rounded-lg px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-zinc-300">Google Drive Folder ID</label>
+                <input
+                  type="text"
+                  value={credentials.GOOGLE_DRIVE_FOLDER_ID}
+                  onChange={(e) => setCredentials({ ...credentials, GOOGLE_DRIVE_FOLDER_ID: e.target.value })}
+                  placeholder="VinceAuto_Videos"
+                  className="w-full bg-[#13151a] border border-[#2d323e] rounded-lg px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-zinc-300">YouTube Channel ID</label>
+                <input
+                  type="text"
+                  value={credentials.YOUTUBE_CHANNEL_ID}
+                  onChange={(e) => setCredentials({ ...credentials, YOUTUBE_CHANNEL_ID: e.target.value })}
+                  placeholder="UCxxxxxxxx..."
+                  className="w-full bg-[#13151a] border border-[#2d323e] rounded-lg px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-amber-400"
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-zinc-300 flex items-center justify-between">
+                <span>YouTube Data API / OAuth Token</span>
+                {maskedInfo.YOUTUBE_API_KEY && (
+                  <span className="text-[10px] text-emerald-400 font-mono">Đã lưu: {maskedInfo.YOUTUBE_API_KEY}</span>
+                )}
+              </label>
+              <input
+                type="password"
+                value={credentials.YOUTUBE_API_KEY}
+                onChange={(e) => setCredentials({ ...credentials, YOUTUBE_API_KEY: e.target.value })}
+                placeholder="Dán YouTube API Key hoặc OAuth Token..."
+                className="w-full bg-[#13151a] border border-[#2d323e] rounded-lg px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-amber-400"
+              />
+            </div>
+          </div>
+
+          {/* Tài khoản Meta (Facebook, Instagram, Threads) & TikTok */}
+          <div className="p-4 rounded-xl bg-[#191922] border border-[#2d2d3d] space-y-3">
+            <div className="text-xs font-bold text-indigo-300 border-b border-[#292938] pb-1.5">
+              Tài khoản Mạng xã hội (Meta / Facebook / Instagram / Threads / TikTok)
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-zinc-300 flex items-center justify-between">
+                <span>Meta Graph Access Token (dùng cho Facebook, Instagram & Threads)</span>
+                {maskedInfo.META_ACCESS_TOKEN && (
+                  <span className="text-[10px] text-emerald-400 font-mono">Đã lưu: {maskedInfo.META_ACCESS_TOKEN}</span>
+                )}
+              </label>
+              <input
+                type="password"
+                value={credentials.META_ACCESS_TOKEN}
+                onChange={(e) => setCredentials({ ...credentials, META_ACCESS_TOKEN: e.target.value })}
+                placeholder="EAAG..."
+                className="w-full bg-[#13131b] border border-[#2e2e3d] rounded-lg px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-indigo-400"
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-zinc-300">Facebook Page ID</label>
+                <input
+                  type="text"
+                  value={credentials.FACEBOOK_PAGE_ID}
+                  onChange={(e) => setCredentials({ ...credentials, FACEBOOK_PAGE_ID: e.target.value })}
+                  placeholder="Page ID..."
+                  className="w-full bg-[#13131b] border border-[#2e2e3d] rounded-lg px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-indigo-400"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-zinc-300">Instagram Business ID</label>
+                <input
+                  type="text"
+                  value={credentials.INSTAGRAM_ACCOUNT_ID}
+                  onChange={(e) => setCredentials({ ...credentials, INSTAGRAM_ACCOUNT_ID: e.target.value })}
+                  placeholder="IG Account ID..."
+                  className="w-full bg-[#13131b] border border-[#2e2e3d] rounded-lg px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-indigo-400"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-zinc-300">Threads User ID</label>
+                <input
+                  type="text"
+                  value={credentials.THREADS_USER_ID}
+                  onChange={(e) => setCredentials({ ...credentials, THREADS_USER_ID: e.target.value })}
+                  placeholder="Threads ID..."
+                  className="w-full bg-[#13131b] border border-[#2e2e3d] rounded-lg px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-indigo-400"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-zinc-300">TikTok Open ID</label>
+                <input
+                  type="text"
+                  value={credentials.TIKTOK_OPEN_ID}
+                  onChange={(e) => setCredentials({ ...credentials, TIKTOK_OPEN_ID: e.target.value })}
+                  placeholder="TikTok Open ID..."
+                  className="w-full bg-[#13131b] border border-[#2e2e3d] rounded-lg px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-indigo-400"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] font-medium text-zinc-300 flex items-center justify-between">
+                  <span>TikTok Access Token</span>
+                  {maskedInfo.TIKTOK_ACCESS_TOKEN && (
+                    <span className="text-[10px] text-emerald-400 font-mono">Đã lưu</span>
+                  )}
+                </label>
+                <input
+                  type="password"
+                  value={credentials.TIKTOK_ACCESS_TOKEN}
+                  onChange={(e) => setCredentials({ ...credentials, TIKTOK_ACCESS_TOKEN: e.target.value })}
+                  placeholder="act.xxxx..."
+                  className="w-full bg-[#13131b] border border-[#2e2e3d] rounded-lg px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-indigo-400"
+                />
+              </div>
+            </div>
           </div>
 
           {/* GitHub Cloud Sync (24/7 Persistence) */}

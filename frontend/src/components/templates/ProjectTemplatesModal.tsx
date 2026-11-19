@@ -1105,12 +1105,14 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
       return '';
     }
   });
+  const [savedSocialCreds, setSavedSocialCreds] = useState<Record<string, string>>({});
 
   useEffect(() => {
     axios
       .get('/api/credentials')
       .then((res) => {
         const creds = res.data?.credentials || {};
+        setSavedSocialCreds(creds);
         if (!geminiApiKey && typeof creds.GEMINI_API_KEY === 'string' && creds.GEMINI_API_KEY.trim()) {
           setGeminiApiKey(creds.GEMINI_API_KEY.trim());
         }
@@ -1120,8 +1122,9 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
         if (!googleSheetId && typeof creds.GOOGLE_SHEET_ID === 'string' && creds.GOOGLE_SHEET_ID.trim()) {
           setGoogleSheetId(creds.GOOGLE_SHEET_ID.trim());
         }
-        if (!facebookPageId && typeof creds.FB_PAGE_ID === 'string' && creds.FB_PAGE_ID.trim()) {
-          setFacebookPageId(creds.FB_PAGE_ID.trim());
+        if (!facebookPageId && typeof (creds.FACEBOOK_PAGE_ID || creds.FB_PAGE_ID) === 'string') {
+          const pid = String(creds.FACEBOOK_PAGE_ID || creds.FB_PAGE_ID || '').trim();
+          if (pid) setFacebookPageId(pid);
         }
       })
       .catch(() => {
@@ -1232,6 +1235,21 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
       }
       if ((n.type.startsWith('vince.googleSheets') || params.app === 'googleSheets') && cleanSheetId) {
         params.spreadsheetId = cleanSheetId;
+      }
+      if (n.type.startsWith('vince.googleDrive') && savedSocialCreds.GOOGLE_DRIVE_FOLDER_ID) {
+        params.folderId = savedSocialCreds.GOOGLE_DRIVE_FOLDER_ID;
+      }
+      if (n.type.startsWith('vince.youtube') && savedSocialCreds.YOUTUBE_CHANNEL_ID) {
+        params.channelId = savedSocialCreds.YOUTUBE_CHANNEL_ID;
+      }
+      if (n.type.startsWith('vince.instagram') && savedSocialCreds.INSTAGRAM_ACCOUNT_ID) {
+        params.accountId = savedSocialCreds.INSTAGRAM_ACCOUNT_ID;
+      }
+      if (n.type.startsWith('vince.threads') && savedSocialCreds.THREADS_USER_ID) {
+        params.userId = savedSocialCreds.THREADS_USER_ID;
+      }
+      if (n.type.startsWith('vince.tiktok') && savedSocialCreds.TIKTOK_OPEN_ID) {
+        params.openId = savedSocialCreds.TIKTOK_OPEN_ID;
       }
       return { ...n, parameters: params };
     });

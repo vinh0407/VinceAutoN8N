@@ -834,6 +834,33 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
         }
       }
 
+      // Auto-fill saved Google / YouTube / Meta / Facebook / Instagram / Threads / TikTok defaults
+      const savedCreds = globalWorkflowStore.getCredentials();
+      if (type.startsWith('vince.youtube') && savedCreds.YOUTUBE_CHANNEL_ID && !params.channelId) {
+        params.channelId = savedCreds.YOUTUBE_CHANNEL_ID;
+      }
+      if (type.startsWith('vince.facebook') && (savedCreds.FACEBOOK_PAGE_ID || savedCreds.FB_PAGE_ID) && (!params.pageId || params.pageId === 'me')) {
+        params.pageId = savedCreds.FACEBOOK_PAGE_ID || savedCreds.FB_PAGE_ID;
+      }
+      if (type.startsWith('vince.instagram') && savedCreds.INSTAGRAM_ACCOUNT_ID && !params.accountId) {
+        params.accountId = savedCreds.INSTAGRAM_ACCOUNT_ID;
+      }
+      if (type.startsWith('vince.threads') && savedCreds.THREADS_USER_ID && !params.userId) {
+        params.userId = savedCreds.THREADS_USER_ID;
+      }
+      if (type.startsWith('vince.tiktok') && savedCreds.TIKTOK_OPEN_ID && !params.openId) {
+        params.openId = savedCreds.TIKTOK_OPEN_ID;
+      }
+      if (type.startsWith('vince.googleSheets') && savedCreds.GOOGLE_SHEET_ID && !params.spreadsheetId) {
+        params.spreadsheetId = savedCreds.GOOGLE_SHEET_ID;
+      }
+      if (type.startsWith('vince.googleDrive') && savedCreds.GOOGLE_DRIVE_FOLDER_ID && (!params.folderId || params.folderId === 'root')) {
+        params.folderId = savedCreds.GOOGLE_DRIVE_FOLDER_ID;
+      }
+      if (type === 'vince.gmail.sendEmail' && savedCreds.OWNER_EMAIL && !params.to) {
+        params.to = savedCreds.OWNER_EMAIL;
+      }
+
       const pos: [number, number] =
         Array.isArray(n.position) && n.position.length === 2 && Number.isFinite(n.position[0]) && Number.isFinite(n.position[1])
           ? [Math.round(n.position[0]), Math.round(n.position[1])]
