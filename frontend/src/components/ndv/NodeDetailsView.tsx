@@ -1662,6 +1662,51 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                             disabled={isGeneratingSheetCols}
                             onClick={async () => {
                               setIsGeneratingSheetCols(true);
+                              const buildLocalSchema = () => {
+                                const ctx = `${workflow?.name || ''} ${sheetColsPrompt}`.toLowerCase();
+                                if (ctx.includes('video') || ctx.includes('facebook') || ctx.includes('tiktok') || ctx.includes('youtube') || ctx.includes('đăng')) {
+                                  return {
+                                    sheetName: 'VideoLinks',
+                                    range: 'VideoLinks!A:G',
+                                    columns: [
+                                      { key: 'platform', label: 'Nền tảng nguồn (FB/TikTok/YT/IG)', example: 'TikTok' },
+                                      { key: 'videoUrl', label: 'Link Video / Bài viết nguồn', example: 'https://www.tiktok.com/@user/video/123' },
+                                      { key: 'targetPageId', label: 'ID Trang Facebook đích', example: '123456789012345' },
+                                      { key: 'scheduleTime', label: 'Giờ hẹn đăng (YYYY-MM-DD HH:mm)', example: '2026-11-20 20:00' },
+                                      { key: 'caption', label: 'Caption AI tạo (tự điền)', example: 'Video xu hướng...' },
+                                      { key: 'driveUrl', label: 'Link lưu Google Drive (tự điền)', example: 'https://drive.google.com/...' },
+                                      { key: 'status', label: 'Trạng thái (PENDING / PUBLISHED)', example: 'PENDING' },
+                                    ],
+                                  };
+                                }
+                                if (ctx.includes('đơn') || ctx.includes('shopee') || ctx.includes('order')) {
+                                  return {
+                                    sheetName: 'Orders',
+                                    range: 'Orders!A:G',
+                                    columns: [
+                                      { key: 'orderId', label: 'Mã đơn hàng', example: 'ORD-20261119' },
+                                      { key: 'platform', label: 'Sàn (Shopee/TikTok/Lazada)', example: 'Shopee' },
+                                      { key: 'customerName', label: 'Tên khách hàng', example: 'Nguyễn Văn A' },
+                                      { key: 'phone', label: 'Số điện thoại', example: '0901234567' },
+                                      { key: 'totalAmount', label: 'Tổng tiền (VND)', example: '450000' },
+                                      { key: 'aiNote', label: 'Phân loại AI', example: 'Khách VIP' },
+                                      { key: 'status', label: 'Trạng thái', example: 'CONFIRMED' },
+                                    ],
+                                  };
+                                }
+                                return {
+                                  sheetName: 'Data',
+                                  range: parameters.range || 'Data!A:F',
+                                  columns: [
+                                    { key: 'id', label: 'Mã bản ghi', example: '1' },
+                                    { key: 'sourceUrl', label: 'Link nguồn / Tham chiếu', example: 'https://example.com' },
+                                    { key: 'title', label: 'Tiêu đề / Chủ đề', example: 'Nội dung mẫu' },
+                                    { key: 'scheduleTime', label: 'Giờ hẹn xử lý / đăng', example: '2026-11-20 20:00' },
+                                    { key: 'aiResult', label: 'Kết quả AI xử lý', example: 'Hoàn tất' },
+                                    { key: 'status', label: 'Trạng thái', example: 'PENDING' },
+                                  ],
+                                };
+                              };
                               try {
                                 const res = await axios.post('/api/ai/sheet-columns', {
                                   workflowName: workflow?.name || nodeName,
@@ -1670,9 +1715,11 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                                 });
                                 if (res.data?.success && res.data?.schema) {
                                   setGeneratedSheetSchema(res.data.schema);
+                                } else {
+                                  setGeneratedSheetSchema(buildLocalSchema());
                                 }
                               } catch {
-                                // ignore
+                                setGeneratedSheetSchema(buildLocalSchema());
                               } finally {
                                 setIsGeneratingSheetCols(false);
                               }
