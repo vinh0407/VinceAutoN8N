@@ -914,6 +914,136 @@ const VINCEAUTO_FEATURED_TEMPLATES: IN8nTemplateItem[] = [
       { source: 'p5', target: 'p6' },
     ],
   },
+  {
+    id: 'vince_tpl_pdf_rag_finance_06',
+    fileName: 'VinceAuto_PDF_Financial_RAG_Gemini.json',
+    relativePath: 'VinceAuto Featured / Văn phòng & AI',
+    category: 'VINCEAUTO_FEATURED',
+    categoryVi: '★ Mẫu Tối Ưu Chuẩn Dự Án VinceAuto',
+    titleEn: 'PDF & Financial Document Analyzer (Drive + Gemini + Sheets + Gmail)',
+    titleVi: 'Phân tích Tài liệu PDF / Báo cáo Tài chính ➔ AI Gemini Tóm tắt ➔ Lưu Sheets & Gửi Gmail',
+    descriptionVi:
+      'Tự động kích hoạt khi bạn tải file PDF hoặc báo cáo lên Google Drive: trích xuất nội dung, dùng Google Gemini phân tích số liệu & rủi ro quan trọng, lưu tổng hợp vào Google Sheets và gửi báo cáo về Gmail.',
+    departmentVi: 'Văn phòng & AI',
+    isVinceOptimizedFeatured: true,
+    nodesCount: 5,
+    nodeNames: [
+      'Google Drive Trigger (File PDF Mới)',
+      'Edit Fields: Chuẩn hóa Metadata File',
+      'AI Agent (Google Gemini): Phân tích & Tóm tắt',
+      'Google Sheets: Lưu Báo cáo Phân tích',
+      'Gmail: Gửi Báo cáo Tóm tắt',
+    ],
+    nodes: [
+      { id: 'pdf1', name: 'Google Drive Trigger: File Mới', type: 'trigger.appEvent', position: [80, 240], parameters: { app: 'googleDrive', event: 'fileCreated', folderId: 'VinceAuto_Docs' } },
+      { id: 'pdf2', name: 'Edit Fields: Chuẩn hóa File', type: 'transform.editFields', position: [360, 240], parameters: { mode: 'manual', fields: { fileName: '{{ $json.name }}', fileUrl: '{{ $json.webViewLink || $json.url }}' } } },
+      { id: 'pdf3', name: 'AI Agent (Google Gemini)', type: 'vince.modelRouter', position: [640, 240], parameters: { provider: 'gemini', providerType: 'gemini', model: 'gemini-3.1-flash-lite-preview', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', prompt: 'Phân tích và tóm tắt các điểm quan trọng nhất từ tài liệu: {{ JSON.stringify($json) }}' } },
+      { id: 'pdf4', name: 'Google Sheets: Lưu Kết quả', type: 'vince.googleSheets.appendRow', position: [940, 150], parameters: { resource: 'Row', operation: 'append', range: 'Documents!A:E' } },
+      { id: 'pdf5', name: 'Gmail: Gửi Báo cáo', type: 'vince.gmail.sendEmail', position: [940, 330], parameters: { resource: 'Message', operation: 'send', subject: '[VinceAuto] Tóm tắt tài liệu: {{ $json.fileName }}' } },
+    ],
+    connections: [
+      { source: 'pdf1', target: 'pdf2' },
+      { source: 'pdf2', target: 'pdf3' },
+      { source: 'pdf3', target: 'pdf4' },
+      { source: 'pdf3', target: 'pdf5' },
+    ],
+  },
+  {
+    id: 'vince_tpl_gmail_telegram_notion_07',
+    fileName: 'VinceAuto_Gmail_Summary_Telegram_Notion.json',
+    relativePath: 'VinceAuto Featured / Văn phòng & AI',
+    category: 'VINCEAUTO_FEATURED',
+    categoryVi: '★ Mẫu Tối Ưu Chuẩn Dự Án VinceAuto',
+    titleEn: 'Smart Gmail Summarizer to Telegram & Notion',
+    titleVi: 'Lọc & Tóm tắt Email Gmail Quan trọng ➔ Báo Telegram & Lưu Công việc Notion',
+    descriptionVi:
+      'Lắng nghe email mới đến hộp thư Gmail của bạn, lọc bỏ thư rác, dùng Google Gemini tóm tắt nội dung chính + việc cần làm, rồi nhắn ngay qua Telegram và lưu vào Notion.',
+    departmentVi: 'Văn phòng & AI',
+    isVinceOptimizedFeatured: true,
+    nodesCount: 5,
+    nodeNames: [
+      'Gmail Trigger (Email Mới)',
+      'Filter: Lọc Email Quan trọng',
+      'AI Agent (Google Gemini): Tóm tắt & Trích Action Item',
+      'Telegram: Báo tin Tóm tắt Nhanh',
+      'Notion: Lưu Task / Ghi chú',
+    ],
+    nodes: [
+      { id: 'gm1', name: 'Gmail Trigger: Email Mới', type: 'trigger.appEvent', position: [80, 240], parameters: { app: 'gmail', event: 'newEmail' } },
+      { id: 'gm2', name: 'Filter: Lọc Email Quan trọng', type: 'transform.filter', position: [360, 240], parameters: { condition: '$json.subject && !$json.subject.toLowerCase().includes("quảng cáo")' } },
+      { id: 'gm3', name: 'AI Agent (Google Gemini)', type: 'vince.modelRouter', position: [640, 240], parameters: { provider: 'gemini', providerType: 'gemini', model: 'gemini-3.1-flash-lite-preview', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', prompt: 'Tóm tắt ngắn gọn email sau trong 3 gạch đầu dòng và nêu việc cần làm: {{ JSON.stringify($json) }}' } },
+      { id: 'gm4', name: 'Telegram: Báo tin Tóm tắt', type: 'vince.telegram', position: [940, 150], parameters: { resource: 'message', operation: 'sendMessage', chatId: '{{ $json.chatId || $json.message.chat.id }}', message: '📧 Email mới: {{ $json.aiResponse || $json.text }}' } },
+      { id: 'gm5', name: 'Notion: Lưu Ghi chú', type: 'vince.notion.action', position: [940, 330], parameters: { resource: 'Page', operation: 'create' } },
+    ],
+    connections: [
+      { source: 'gm1', target: 'gm2' },
+      { source: 'gm2', target: 'gm3' },
+      { source: 'gm3', target: 'gm4' },
+      { source: 'gm3', target: 'gm5' },
+    ],
+  },
+  {
+    id: 'vince_tpl_hr_cv_screening_08',
+    fileName: 'VinceAuto_HR_CV_Screening_Gemini.json',
+    relativePath: 'VinceAuto Featured / Văn phòng & AI',
+    category: 'VINCEAUTO_FEATURED',
+    categoryVi: '★ Mẫu Tối Ưu Chuẩn Dự Án VinceAuto',
+    titleEn: 'AI HR CV Screening (Gmail + Gemini + Google Sheets)',
+    titleVi: 'Lọc & Chấm điểm CV Ứng viên Tự động (Gmail ➔ AI Gemini ➔ Google Sheets)',
+    descriptionVi:
+      'Tự động nhận email ứng tuyển mới, dùng Google Gemini chấm điểm mức độ phù hợp của CV theo tiêu chí công việc, lưu danh sách ứng viên đạt chuẩn vào Google Sheets và gửi email phản hồi lịch phỏng vấn.',
+    departmentVi: 'Văn phòng & AI',
+    isVinceOptimizedFeatured: true,
+    nodesCount: 4,
+    nodeNames: [
+      'Gmail Trigger (CV Ứng tuyển Mới)',
+      'AI Agent (Google Gemini): Chấm điểm & Đánh giá CV',
+      'Google Sheets: Lưu Hồ sơ Ứng viên',
+      'Gmail: Gửi Email Xác nhận / Mời phỏng vấn',
+    ],
+    nodes: [
+      { id: 'hr1', name: 'Gmail Trigger: Nhận CV', type: 'trigger.appEvent', position: [80, 240], parameters: { app: 'gmail', event: 'newEmail' } },
+      { id: 'hr2', name: 'AI Agent (Google Gemini)', type: 'vince.modelRouter', position: [380, 240], parameters: { provider: 'gemini', providerType: 'gemini', model: 'gemini-3.1-flash-lite-preview', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', prompt: 'Đánh giá CV ứng viên theo thang điểm 10, tóm tắt kỹ năng nổi bật và soạn email phản hồi: {{ JSON.stringify($json) }}' } },
+      { id: 'hr3', name: 'Google Sheets: Lưu Ứng viên', type: 'vince.googleSheets.appendRow', position: [680, 150], parameters: { resource: 'Row', operation: 'append', range: 'Candidates!A:F' } },
+      { id: 'hr4', name: 'Gmail: Phản hồi Ứng viên', type: 'vince.gmail.sendEmail', position: [680, 330], parameters: { resource: 'Message', operation: 'send', subject: 'Xác nhận hồ sơ ứng tuyển' } },
+    ],
+    connections: [
+      { source: 'hr1', target: 'hr2' },
+      { source: 'hr2', target: 'hr3' },
+      { source: 'hr2', target: 'hr4' },
+    ],
+  },
+  {
+    id: 'vince_tpl_wordpress_seo_blogger_09',
+    fileName: 'VinceAuto_WordPress_SEO_Blogger_Sheets.json',
+    relativePath: 'VinceAuto Featured / Content & SEO',
+    category: 'VINCEAUTO_FEATURED',
+    categoryVi: '★ Mẫu Tối Ưu Chuẩn Dự Án VinceAuto',
+    titleEn: 'Automated WordPress SEO Article Publisher from Google Sheets',
+    titleVi: 'Viết & Đăng bài Blog WordPress Chuẩn SEO Tự động từ Google Sheets',
+    descriptionVi:
+      'Khi bạn thêm từ khóa hoặc chủ đề mới vào Google Sheets, AI Google Gemini tự động viết bài chuẩn SEO đầy đủ thẻ H2/H3, đăng lên WordPress và cập nhật link bài viết ngược lại vào Google Sheets.',
+    departmentVi: 'Content & Thương hiệu cá nhân',
+    isVinceOptimizedFeatured: true,
+    nodesCount: 4,
+    nodeNames: [
+      'Google Sheets Trigger (Chủ đề Bài viết Mới)',
+      'AI Agent (Google Gemini): Viết bài Chuẩn SEO',
+      'HTTP Request: Đăng bài lên WordPress REST API',
+      'Google Sheets: Cập nhật Link Bài đã đăng',
+    ],
+    nodes: [
+      { id: 'wp1', name: 'Google Sheets Trigger: Chủ đề Mới', type: 'trigger.appEvent', position: [80, 240], parameters: { app: 'googleSheets', event: 'rowAdded', range: 'BlogTopics!A:D' } },
+      { id: 'wp2', name: 'AI Agent (Google Gemini)', type: 'vince.modelRouter', position: [380, 240], parameters: { provider: 'gemini', providerType: 'gemini', model: 'gemini-3.1-flash-lite-preview', baseUrl: 'https://generativelanguage.googleapis.com/v1beta', prompt: 'Viết bài blog chuẩn SEO dài ~1000 từ với cấu trúc H2, H3 rõ ràng cho chủ đề: {{ $json.topic || $json.keyword }}' } },
+      { id: 'wp3', name: 'HTTP Request: Đăng WordPress', type: 'core.httpRequest', position: [680, 150], parameters: { method: 'POST', url: 'https://your-site.com/wp-json/wp/v2/posts' } },
+      { id: 'wp4', name: 'Google Sheets: Cập nhật Đã đăng', type: 'vince.googleSheets.appendRow', position: [680, 330], parameters: { resource: 'Row', operation: 'appendOrUpdate', range: 'BlogTopics!A:D' } },
+    ],
+    connections: [
+      { source: 'wp1', target: 'wp2' },
+      { source: 'wp2', target: 'wp3' },
+      { source: 'wp2', target: 'wp4' },
+    ],
+  },
 ];
 
 // Optimize all 369 imported templates and combine with VinceAuto Featured Templates
@@ -927,7 +1057,7 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
   onClose,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('VINCEAUTO_FEATURED');
-  const [featuredTopic, setFeaturedTopic] = useState<'all' | 'chatbot' | 'social' | 'business'>('all');
+  const [featuredTopic, setFeaturedTopic] = useState<'all' | 'chatbot' | 'social' | 'business' | 'office'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [previewTemplate, setPreviewTemplate] = useState<IN8nTemplateItem | null>(
     allTemplates[0] || null
@@ -1032,6 +1162,7 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
         if (featuredTopic === 'chatbot' && !dept.includes('chatbot')) return false;
         if (featuredTopic === 'social' && !dept.includes('social') && !dept.includes('content') && !dept.includes('cskh')) return false;
         if (featuredTopic === 'business' && !dept.includes('tmđt') && !dept.includes('tài chính')) return false;
+        if (featuredTopic === 'office' && !dept.includes('văn phòng')) return false;
       }
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
@@ -1266,6 +1397,7 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
                   { id: 'chatbot', label: 'Chatbot AI' },
                   { id: 'social', label: 'Video & Mạng xã hội' },
                   { id: 'business', label: 'Bán hàng & Thanh toán' },
+                  { id: 'office', label: 'Văn phòng & AI' },
                 ].map((tab) => (
                   <button
                     key={tab.id}
