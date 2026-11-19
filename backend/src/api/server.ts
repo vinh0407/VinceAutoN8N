@@ -14,6 +14,13 @@ import { globalAIRouter } from '../ai/router.js';
 import { globalCronScheduler } from '../scheduler/cron-manager.js';
 import { globalTelegramPoller } from '../scheduler/telegram-poller.js';
 import { globalCloudBackup } from '../storage/cloud-backup.js';
+import {
+  getAuthStatus,
+  isAuthConfigured,
+  loginSingleAccount,
+  setupSingleAccount,
+  verifySessionToken,
+} from '../auth/private-auth.js';
 
 export function createServer() {
   const app = express();
@@ -37,6 +44,53 @@ export function createServer() {
 
   app.get('/ping', (req, res) => {
     res.status(200).send('pong');
+  });
+
+  // Private Single-Account Auth endpoints
+  app.get('/api/auth/status', (req, res) => {
+    const authHeader = String(req.headers.authorization || '');
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+    const check = token ? verifySessionToken(token) : { valid: false };
+    res.json({
+      success: true,
+      ...getAuthStatus(),
+      authenticated: check.valid,
+      username: check.valid ? check.username : undefined,
+    });
+  });
+
+  app.post('/api/auth/setup', (req, res) => {
+    const { username, password } = req.body || {};
+    const result = setupSingleAccount(String(username || ''), String(password || ''));
+    if (!result.ok) {
+      return res.status(403).json({ success: false, error: result.error });
+    }
+    void globalCloudBackup.push();
+    res.json({ success: true, token: result.token, username: result.username });
+  });
+
+  app.post('/api/auth/login', (req, res) => {
+    const { username, password } = req.body || {};
+    const result = loginSingleAccount(String(username || ''), String(password || ''));
+    if (!result.ok) {
+      return res.status(401).json({ success: false, error: result.error });
+    }
+    res.json({ success: true, token: result.token, username: result.username });
+  });
+
+  // Require valid private-account session for all protected /api routes
+  app.use('/api', (req, res, next) => {
+    if (req.path.startsWith('/auth/')) return next();
+    if (!isAuthConfigured()) {
+      return res.status(401).json({ success: false, setupRequired: true, error: 'Vui lòng thiết lập tài khoản riêng tư duy nhất.' });
+    }
+    const authHeader = String(req.headers.authorization || '');
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : '';
+    const check = token ? verifySessionToken(token) : { valid: false };
+    if (!check.valid) {
+      return res.status(401).json({ success: false, error: 'Phiên đăng nhập hết hạn hoặc chưa đăng nhập.' });
+    }
+    next();
   });
 
   // Broadcast WebSocket event

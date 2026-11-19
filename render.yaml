@@ -21,6 +21,13 @@ services:
         value: crouton-alpha-free
       - key: OPENCODE2_API_KEY
         sync: false
+      # Single private account credentials (set in Render Dashboard, never committed to git)
+      - key: AUTH_USERNAME
+        sync: false
+      - key: AUTH_PASSWORD
+        sync: false
+      - key: AUTH_SECRET
+        sync: false
       # Google Gemini AI Studio API key (for AI Workflow Builder & Gemini AI Agent nodes)
       - key: GEMINI_API_KEY
         sync: false

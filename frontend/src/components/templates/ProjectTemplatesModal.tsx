@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import axios from 'axios';
 import {
   X,
   Search,
@@ -960,6 +961,43 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
       return '';
     }
   });
+  const [ownerEmail, setOwnerEmail] = useState<string>(() => {
+    try {
+      return localStorage.getItem('vinceauto:owner_email') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [googleSheetId, setGoogleSheetId] = useState<string>(() => {
+    try {
+      return localStorage.getItem('vinceauto:google_sheet_id') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  useEffect(() => {
+    axios
+      .get('/api/credentials')
+      .then((res) => {
+        const creds = res.data?.credentials || {};
+        if (!geminiApiKey && typeof creds.GEMINI_API_KEY === 'string' && creds.GEMINI_API_KEY.trim()) {
+          setGeminiApiKey(creds.GEMINI_API_KEY.trim());
+        }
+        if (!ownerEmail && typeof creds.OWNER_EMAIL === 'string' && creds.OWNER_EMAIL.trim()) {
+          setOwnerEmail(creds.OWNER_EMAIL.trim());
+        }
+        if (!googleSheetId && typeof creds.GOOGLE_SHEET_ID === 'string' && creds.GOOGLE_SHEET_ID.trim()) {
+          setGoogleSheetId(creds.GOOGLE_SHEET_ID.trim());
+        }
+        if (!facebookPageId && typeof creds.FB_PAGE_ID === 'string' && creds.FB_PAGE_ID.trim()) {
+          setFacebookPageId(creds.FB_PAGE_ID.trim());
+        }
+      })
+      .catch(() => {
+        // ignore
+      });
+  }, []);
 
   // Group categories with counts, keeping VINCEAUTO_FEATURED at the top
   const categories = useMemo(() => {
@@ -1014,15 +1052,30 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
     const cleanChatId = telegramChatId.trim() || '1869249751';
     const cleanOwner = ownerName.trim() || 'Vinh Ưng';
     const cleanPageId = facebookPageId.trim();
+    const cleanEmail = ownerEmail.trim();
+    const cleanSheetId = googleSheetId.trim();
 
     try {
       localStorage.setItem('vinceauto:owner_name', cleanOwner);
       localStorage.setItem('vinceauto:telegram_chat_id', cleanChatId);
       if (cleanPageId) localStorage.setItem('vinceauto:fb_page_id', cleanPageId);
       if (cleanKey) localStorage.setItem('vinceauto:gemini_api_key', cleanKey);
+      if (cleanEmail) localStorage.setItem('vinceauto:owner_email', cleanEmail);
+      if (cleanSheetId) localStorage.setItem('vinceauto:google_sheet_id', cleanSheetId);
     } catch {
       // ignore storage errors
     }
+
+    // Persist personal settings to encrypted backend credentials store
+    axios
+      .post('/api/credentials', {
+        ...(cleanKey ? { GEMINI_API_KEY: cleanKey } : {}),
+        ...(cleanEmail ? { OWNER_EMAIL: cleanEmail } : {}),
+        ...(cleanSheetId ? { GOOGLE_SHEET_ID: cleanSheetId } : {}),
+        ...(cleanPageId ? { FB_PAGE_ID: cleanPageId } : {}),
+        TELEGRAM_CHAT_ID: cleanChatId,
+      })
+      .catch(() => undefined);
 
     const personalizedNodes = optimized.nodes.map((n) => {
       const params = { ...(n.parameters || {}) };
@@ -1042,6 +1095,12 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
       }
       if ((n.type === 'vince.facebook.video' || n.type === 'vince.facebook.postFeed') && cleanPageId) {
         params.pageId = cleanPageId;
+      }
+      if (n.type === 'vince.gmail.sendEmail' && cleanEmail) {
+        params.to = cleanEmail;
+      }
+      if ((n.type.startsWith('vince.googleSheets') || params.app === 'googleSheets') && cleanSheetId) {
+        params.spreadsheetId = cleanSheetId;
       }
       return { ...n, parameters: params };
     });
@@ -1323,6 +1382,29 @@ export const ProjectTemplatesModal: React.FC<ProjectTemplatesModalProps> = ({
                         value={telegramChatId}
                         onChange={(e) => setTelegramChatId(e.target.value)}
                         placeholder="1869249751"
+                        className="w-full bg-[#131317] border border-[#2d2d36] rounded-md px-2 py-1 text-[11px] font-mono text-zinc-100 focus:outline-none focus:border-sky-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] text-zinc-400 mb-0.5">Email / Gmail của bạn</label>
+                      <input
+                        type="email"
+                        value={ownerEmail}
+                        onChange={(e) => setOwnerEmail(e.target.value)}
+                        placeholder="Nhập Gmail của bạn..."
+                        className="w-full bg-[#131317] border border-[#2d2d36] rounded-md px-2 py-1 text-[11px] text-zinc-100 focus:outline-none focus:border-sky-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-zinc-400 mb-0.5">Google Sheet ID</label>
+                      <input
+                        type="text"
+                        value={googleSheetId}
+                        onChange={(e) => setGoogleSheetId(e.target.value)}
+                        placeholder="Dán ID Google Sheet..."
                         className="w-full bg-[#131317] border border-[#2d2d36] rounded-md px-2 py-1 text-[11px] font-mono text-zinc-100 focus:outline-none focus:border-sky-400"
                       />
                     </div>

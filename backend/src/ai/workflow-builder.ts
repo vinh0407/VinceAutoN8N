@@ -1244,7 +1244,7 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
         parameters: {
           resource: 'Row',
           operation: 'appendOrUpdate',
-          spreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
+          spreadsheetId: globalWorkflowStore.getCredentials()?.GOOGLE_SHEET_ID || '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
           range: 'Data!A:G',
           values: '{{ JSON.stringify($json) }}',
         },
@@ -1426,7 +1426,7 @@ QUY TẮC THIẾT KẾ WORKFLOW THÔNG MINH & LOGIC:
         parameters: {
           resource: 'Message',
           operation: 'send',
-          to: '{{ $json.email || "admin@vinceauto.vn" }}',
+          to: `{{ $json.email || "${globalWorkflowStore.getCredentials()?.OWNER_EMAIL || ''}" }}`,
           subject: '[VinceAuto AI] Báo cáo tự động',
           bodyHtml: '<p>{{ $json.text || $json.summary }}</p>',
         },

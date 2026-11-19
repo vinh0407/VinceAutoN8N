@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import axios from 'axios';
 import { ReactFlowProvider } from '@xyflow/react';
 import { App } from './App';
+import { LoginGate } from './components/auth/LoginGate';
 import './index.css';
 
 const RENDER_BACKEND_URL = 'https://vinceauto-backend.onrender.com';
@@ -16,7 +17,9 @@ if (apiBase) {
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ReactFlowProvider>
-      <App />
+      <LoginGate>
+        <App />
+      </LoginGate>
     </ReactFlowProvider>
   </React.StrictMode>
 );

@@ -17,7 +17,7 @@ import { globalWorkflowStore } from './store.js';
  *   exit  -> SIGTERM/SIGINT: final push
  */
 
-const FILES = ['workflows.json', 'projects.json', 'credentials.json', 'tasks.json', 'versions.json', 'tables.json'];
+const FILES = ['workflows.json', 'projects.json', 'credentials.json', 'tasks.json', 'versions.json', 'tables.json', 'auth.json'];
 const DESCRIPTION = 'vinceauto-data-backup';
 const API = 'https://api.github.com';
 
