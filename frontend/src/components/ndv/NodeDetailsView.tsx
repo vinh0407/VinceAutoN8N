@@ -1350,8 +1350,8 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               {activeTab === 'parameters' ? (
                 <>
-                  {/* 1. Webhook URLs Accordion (for Trigger / Webhook nodes) */}
-                  {(isTrigger || nodeType.includes('webhook')) && (
+                  {/* 1. Webhook URLs Accordion (only for Webhook nodes) */}
+                  {nodeType.includes('webhook') && (
                     <div className="border-b border-[#323236] pb-3">
                       <button
                         onClick={() => setShowWebhookUrls(!showWebhookUrls)}
@@ -1393,16 +1393,16 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                     </div>
                   )}
 
-                  {/* 2. Credential Selector (Exact Match to Screenshot) */}
+                  {/* 2. Credential Selector */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-zinc-200 block">
-                      Credential to connect with
+                      Tài khoản kết nối
                     </label>
                     <div className="flex items-center space-x-2">
                       <div className="relative flex-1">
                         <KeyRound className="w-3.5 h-3.5 text-zinc-400 absolute left-3 top-2.5" />
                         <select
-                          value={parameters.credential || appCatalog?.credentialTitle || 'Default account'}
+                          value={parameters.credential || appCatalog?.credentialTitle || 'Tài khoản mặc định'}
                           onChange={(e) => {
                             if (e.target.value === '__new__') {
                               setShowCredentialEditor(true);
@@ -1413,12 +1413,9 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                           className="w-full bg-[#18181b] border border-[#34343a] rounded-md pl-8 pr-8 py-2 text-xs text-zinc-100 focus:outline-none focus:border-[#e6e8ec]"
                         >
                           <option value={appCatalog?.credentialTitle || `${nodeName} account`}>
-                            {appCatalog?.credentialTitle || `${nodeName} account`}
+                            {appCatalog?.credentialTitle || `Tài khoản ${nodeName}`}
                           </option>
-                          <option value="Production API Account">
-                            {appCatalog?.name || nodeName} Production Account
-                          </option>
-                          <option value="__new__">+ Create New Credential...</option>
+                          <option value="__new__">+ Nhập Token / API Key khác...</option>
                         </select>
                       </div>
                       <button
@@ -1463,19 +1460,11 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                     )}
                   </div>
 
-                  {/* 3. Primary Amber Callout Notice Box (Exact Match to Screenshot) */}
-                  {(appCatalog?.notice || isTrigger) && (
-                    <div className="p-3 rounded-md bg-[#3d351e]/60 border border-[#967828] text-[12px] text-zinc-100 leading-relaxed">
-                      {appCatalog?.notice ||
-                        `Due to API limitations, you can use just one ${nodeName} for each bot/account at a time`}
-                    </div>
-                  )}
-
                   {/* 4. FULL TRIGGER ON / ACTION RESOURCE & OPERATION SELECTOR */}
                   {isTrigger ? (
                     <div className="space-y-1.5 relative">
                       <label className="text-xs font-medium text-zinc-200 block">
-                        Trigger On
+                        Sự kiện kích hoạt
                       </label>
                       <div
                         onClick={() => setShowTriggerOnMenu(!showTriggerOnMenu)}
@@ -1605,11 +1594,30 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                     )
                   )}
 
-                  {/* 5. Secondary Amber Callout Box (Exact Match to Screenshot) */}
-                  {(appCatalog?.secondaryNotice || isTrigger) && (
-                    <div className="p-3 rounded-md bg-[#3d351e]/60 border border-[#967828] text-[12px] text-zinc-100 leading-relaxed">
-                      {appCatalog?.secondaryNotice ||
-                        'Every uploaded attachment, even if sent in a group, will trigger a separate event. You can identify that an attachment belongs to a certain group by media_group_id .'}
+                  {/* Quick Google Sheets Config when node is Google Sheets Trigger / Action */}
+                  {(parameters.app === 'googleSheets' || nodeType.toLowerCase().includes('googlesheets')) && (
+                    <div className="p-3 rounded-xl bg-[#161f1b] border border-[#244032] space-y-2.5 text-xs">
+                      <div className="font-semibold text-emerald-300 text-[11px]">Cấu hình Google Sheets</div>
+                      <div className="space-y-1">
+                        <label className="block text-[11px] text-zinc-300">Google Sheet ID</label>
+                        <input
+                          type="text"
+                          value={parameters.spreadsheetId ?? ''}
+                          onChange={(e) => handleFieldChange('spreadsheetId', e.target.value)}
+                          placeholder="Dán ID Google Sheet (lấy từ link /d/<ID>/edit)..."
+                          className="w-full bg-[#111614] border border-[#283d32] rounded-md px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-emerald-400"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="block text-[11px] text-zinc-300">Tên Sheet & Vùng cột (Range)</label>
+                        <input
+                          type="text"
+                          value={parameters.range ?? 'VideoLinks!A:F'}
+                          onChange={(e) => handleFieldChange('range', e.target.value)}
+                          placeholder="VideoLinks!A:F"
+                          className="w-full bg-[#111614] border border-[#283d32] rounded-md px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-emerald-400"
+                        />
+                      </div>
                     </div>
                   )}
 
@@ -2051,7 +2059,16 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                   )}
 
                   {/* 6. Node-Specific Properties (Drop-enabled for Kéo Thả!) */}
-                  {propertiesToRender.map((prop) => {
+                  {propertiesToRender
+                    .filter((prop) => {
+                      // Hide mismatched "app" dropdown when node already targets a dedicated app (e.g. googleSheets, googleDrive, notion, gmail)
+                      if (prop.name === 'app' && parameters.app) {
+                        const opts = (prop.options || []).map((o: any) => o.value);
+                        if (!opts.includes(parameters.app)) return false;
+                      }
+                      return true;
+                    })
+                    .map((prop) => {
                     const val =
                       parameters[prop.name] !== undefined
                         ? parameters[prop.name]
@@ -2343,20 +2360,6 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Bottom Center Feedback Link: "💡 I wish this node would..." (Exact Match to Screenshot) */}
-            <div className="h-10 border-t border-[#2c2c30] flex items-center justify-center shrink-0">
-              <button
-                onClick={() => {
-                  const wish = prompt('Bạn muốn bổ sung tính năng gì cho node này?');
-                  if (wish) alert('Cảm ơn đóng góp của bạn! Đã ghi nhận vào lộ trình VinceAuto.');
-                }}
-                className="flex items-center space-x-1.5 text-[11px] text-zinc-400 hover:text-zinc-200 transition-colors"
-              >
-                <Lightbulb className="w-3.5 h-3.5" />
-                <span>I wish this node would...</span>
-              </button>
             </div>
           </div>
 
