@@ -570,6 +570,7 @@ export function createServer() {
           },
         ],
         'auto',
+        'gemini',
         {
           model: 'gemini-3.1-flash-lite-preview',
           baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
