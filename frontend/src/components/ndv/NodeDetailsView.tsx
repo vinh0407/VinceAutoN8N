@@ -427,6 +427,16 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
   const [isEditingMockData, setIsEditingMockData] = useState(false);
   const [mockDataText, setMockDataText] = useState('');
 
+  // AI Google Sheet Columns Optimizer
+  const [isGeneratingSheetCols, setIsGeneratingSheetCols] = useState(false);
+  const [sheetColsPrompt, setSheetColsPrompt] = useState('');
+  const [generatedSheetSchema, setGeneratedSheetSchema] = useState<{
+    sheetName: string;
+    range: string;
+    columns: Array<{ key: string; label: string; example?: string }>;
+  } | null>(null);
+  const [copiedSheetHeaders, setCopiedSheetHeaders] = useState(false);
+
   // AI Agent specific node states (independent from system API)
   const [showApiKey, setShowApiKey] = useState(false);
   const [isCustomModelMode, setIsCustomModelMode] = useState<boolean>(
@@ -1635,6 +1645,95 @@ export const NodeDetailsView: React.FC<NodeDetailsViewProps> = ({
                           placeholder="VideoLinks!A:F"
                           className="w-full bg-[#111614] border border-[#283d32] rounded-md px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-emerald-400"
                         />
+                      </div>
+
+                      {/* AI Google Sheet Columns Generator */}
+                      <div className="pt-2 border-t border-[#22392d] space-y-2">
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="text"
+                            value={sheetColsPrompt}
+                            onChange={(e) => setSheetColsPrompt(e.target.value)}
+                            placeholder="VD: Thêm cột giờ hẹn đăng, link Drive, trạng thái..."
+                            className="flex-1 bg-[#111614] border border-[#283d32] rounded-md px-2 py-1 text-[11px] text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-400"
+                          />
+                          <button
+                            type="button"
+                            disabled={isGeneratingSheetCols}
+                            onClick={async () => {
+                              setIsGeneratingSheetCols(true);
+                              try {
+                                const res = await axios.post('/api/ai/sheet-columns', {
+                                  workflowName: workflow?.name || nodeName,
+                                  prompt: sheetColsPrompt,
+                                  currentRange: parameters.range || '',
+                                });
+                                if (res.data?.success && res.data?.schema) {
+                                  setGeneratedSheetSchema(res.data.schema);
+                                }
+                              } catch {
+                                // ignore
+                              } finally {
+                                setIsGeneratingSheetCols(false);
+                              }
+                            }}
+                            className="px-2.5 py-1 rounded-md bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-zinc-950 font-bold text-[11px] flex items-center space-x-1 shrink-0 cursor-pointer"
+                          >
+                            {isGeneratingSheetCols ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Sparkles className="w-3 h-3" />
+                            )}
+                            <span>{isGeneratingSheetCols ? 'Đang tạo...' : 'AI Tạo Cột'}</span>
+                          </button>
+                        </div>
+
+                        {generatedSheetSchema && (
+                          <div className="p-2.5 rounded-lg bg-[#101814] border border-[#264636] space-y-2">
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="font-semibold text-emerald-300">
+                                Đề xuất: {generatedSheetSchema.range} ({generatedSheetSchema.columns.length} cột)
+                              </span>
+                              <div className="flex items-center space-x-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const tsv = generatedSheetSchema.columns.map((c) => c.key).join('\t');
+                                    navigator.clipboard.writeText(tsv);
+                                    setCopiedSheetHeaders(true);
+                                    setTimeout(() => setCopiedSheetHeaders(false), 1800);
+                                  }}
+                                  className="px-2 py-0.5 rounded bg-[#1d2e25] hover:bg-[#274033] text-emerald-200 text-[10px] font-semibold cursor-pointer"
+                                >
+                                  {copiedSheetHeaders ? '✓ Đã copy (dán vào ô A1)' : 'Copy Tiêu đề Cột'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    onUpdateParameters(node.id, {
+                                      ...parameters,
+                                      range: generatedSheetSchema.range,
+                                      columns: generatedSheetSchema.columns.map((c) => c.key).join(','),
+                                    });
+                                  }}
+                                  className="px-2 py-0.5 rounded bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-[10px] font-bold cursor-pointer"
+                                >
+                                  Áp dụng vào Node
+                                </button>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 gap-1 max-h-36 overflow-y-auto">
+                              {generatedSheetSchema.columns.map((col, idx) => (
+                                <div key={col.key} className="flex items-center justify-between text-[10.5px] bg-[#14201a] px-2 py-1 rounded">
+                                  <span className="font-mono text-emerald-200">
+                                    {String.fromCharCode(65 + idx)}. {col.key}
+                                  </span>
+                                  <span className="text-zinc-400 truncate ml-2">{col.label}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

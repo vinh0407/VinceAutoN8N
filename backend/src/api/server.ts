@@ -486,6 +486,112 @@ export function createServer() {
     }
   });
 
+  // 5b. AI Google Sheet Columns Optimizer
+  app.post('/api/ai/sheet-columns', async (req, res) => {
+    const { workflowName = '', prompt = '', currentRange = '' } = req.body || {};
+    const creds = globalWorkflowStore.getCredentials();
+    const geminiKey = (creds?.GEMINI_API_KEY || process.env.GEMINI_API_KEY || '').trim();
+
+    const buildFallback = () => {
+      const ctx = `${workflowName} ${prompt}`.toLowerCase();
+      if (ctx.includes('video') || ctx.includes('facebook') || ctx.includes('tiktok') || ctx.includes('youtube')) {
+        return {
+          sheetName: 'VideoLinks',
+          range: 'VideoLinks!A:G',
+          columns: [
+            { key: 'platform', label: 'Nền tảng nguồn (FB/TikTok/YT/IG)', example: 'TikTok' },
+            { key: 'videoUrl', label: 'Link Video / Bài viết nguồn', example: 'https://www.tiktok.com/@user/video/123' },
+            { key: 'targetPageId', label: 'ID Trang Facebook đích', example: '123456789012345' },
+            { key: 'scheduleTime', label: 'Giờ hẹn đăng (YYYY-MM-DD HH:mm)', example: '2026-11-20 20:00' },
+            { key: 'caption', label: 'Caption AI tạo (tự điền)', example: 'Video xu hướng...' },
+            { key: 'driveUrl', label: 'Link lưu Google Drive (tự điền)', example: 'https://drive.google.com/...' },
+            { key: 'status', label: 'Trạng thái (PENDING / PUBLISHED)', example: 'PENDING' },
+          ],
+        };
+      }
+      if (ctx.includes('đơn') || ctx.includes('shopee') || ctx.includes('order')) {
+        return {
+          sheetName: 'Orders',
+          range: 'Orders!A:G',
+          columns: [
+            { key: 'orderId', label: 'Mã đơn hàng', example: 'ORD-20261119' },
+            { key: 'platform', label: 'Sàn (Shopee/TikTok/Lazada)', example: 'Shopee' },
+            { key: 'customerName', label: 'Tên khách hàng', example: 'Nguyễn Văn A' },
+            { key: 'phone', label: 'Số điện thoại', example: '0901234567' },
+            { key: 'totalAmount', label: 'Tổng tiền (VND)', example: '450000' },
+            { key: 'aiNote', label: 'Phân loại AI', example: 'Khách VIP' },
+            { key: 'status', label: 'Trạng thái', example: 'CONFIRMED' },
+          ],
+        };
+      }
+      if (ctx.includes('thanh toán') || ctx.includes('vietqr') || ctx.includes('momo') || ctx.includes('payment')) {
+        return {
+          sheetName: 'Payments',
+          range: 'Payments!A:F',
+          columns: [
+            { key: 'transactionId', label: 'Mã giao dịch', example: 'TXN-998877' },
+            { key: 'gateway', label: 'Cổng (VietQR/MoMo/VNPAY)', example: 'VietQR' },
+            { key: 'amount', label: 'Số tiền (VND)', example: '500000' },
+            { key: 'orderCode', label: 'Mã đơn đối soát', example: 'DH1024' },
+            { key: 'paidAt', label: 'Thời gian thanh toán', example: '2026-11-19 12:00' },
+            { key: 'status', label: 'Trạng thái', example: 'PAID' },
+          ],
+        };
+      }
+      return {
+        sheetName: 'Data',
+        range: currentRange || 'Data!A:F',
+        columns: [
+          { key: 'id', label: 'Mã bản ghi', example: '1' },
+          { key: 'sourceUrl', label: 'Link nguồn / Tham chiếu', example: 'https://example.com' },
+          { key: 'title', label: 'Tiêu đề / Chủ đề', example: 'Nội dung mẫu' },
+          { key: 'aiResult', label: 'Kết quả AI xử lý', example: 'Đã tóm tắt' },
+          { key: 'status', label: 'Trạng thái', example: 'DONE' },
+          { key: 'updatedAt', label: 'Thời gian cập nhật', example: new Date().toISOString() },
+        ],
+      };
+    };
+
+    if (!geminiKey) {
+      return res.json({ success: true, source: 'smart_template', schema: buildFallback() });
+    }
+
+    try {
+      const aiRes = await globalAIRouter.routeAndExecute(
+        [
+          {
+            role: 'system',
+            content:
+              'Bạn là chuyên gia thiết kế cấu trúc bảng Google Sheets tối ưu cho tự động hóa VinceAuto. Chỉ trả về JSON hợp lệ dạng: {"sheetName":"...","range":"SheetName!A:G","columns":[{"key":"camelCase","label":"Mô tả tiếng Việt ngắn gọn","example":"Giá trị mẫu"}]}',
+          },
+          {
+            role: 'user',
+            content: `Hãy thiết kế các cột Google Sheet tối ưu cho dự án: "${workflowName}". Yêu cầu thêm: "${prompt || 'Tối ưu đầy đủ cho quy trình tự động hóa'}". Range hiện tại: "${currentRange}".`,
+          },
+        ],
+        'auto',
+        {
+          model: 'gemini-3.1-flash-lite-preview',
+          baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+          apiKey: geminiKey,
+          temperature: 0.2,
+        }
+      );
+      const raw = aiRes.text.trim();
+      const first = raw.indexOf('{');
+      const last = raw.lastIndexOf('}');
+      if (first !== -1 && last > first) {
+        const parsed = JSON.parse(raw.slice(first, last + 1));
+        if (Array.isArray(parsed.columns) && parsed.columns.length > 0) {
+          return res.json({ success: true, source: 'gemini', schema: parsed });
+        }
+      }
+      return res.json({ success: true, source: 'smart_template', schema: buildFallback() });
+    } catch {
+      return res.json({ success: true, source: 'smart_template', schema: buildFallback() });
+    }
+  });
+
   // 5.1. Test AI Agent Connection (Node-specific API & Model testing)
   app.post('/api/ai/test-connection', async (req, res) => {
     const { provider, baseUrl, apiKey, model } = req.body;
