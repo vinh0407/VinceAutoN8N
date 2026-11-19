@@ -11,6 +11,7 @@ const TOKEN_STORAGE_KEY = 'vinceauto:auth_token';
 export const LoginGate: React.FC<LoginGateProps> = ({ children }) => {
   const [checking, setChecking] = useState(true);
   const [configured, setConfigured] = useState(true);
+  const [backendOutdated, setBackendOutdated] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -19,6 +20,8 @@ export const LoginGate: React.FC<LoginGateProps> = ({ children }) => {
 
   const checkSession = async () => {
     setChecking(true);
+    setBackendOutdated(false);
+    setError(null);
     try {
       const savedToken = localStorage.getItem(TOKEN_STORAGE_KEY) || '';
       if (savedToken) {
@@ -35,7 +38,11 @@ export const LoginGate: React.FC<LoginGateProps> = ({ children }) => {
         localStorage.removeItem(TOKEN_STORAGE_KEY);
         setAuthenticated(false);
       }
-    } catch {
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        setBackendOutdated(true);
+        setError('Backend trên Render chưa cập nhật bản mới (thiếu /api/auth/status). Vào Render Dashboard bấm "Manual Deploy -> Deploy latest commit" rồi bấm Thử lại.');
+      }
       setAuthenticated(false);
     } finally {
       setChecking(false);
@@ -144,12 +151,13 @@ export const LoginGate: React.FC<LoginGateProps> = ({ children }) => {
         )}
 
         <button
-          type="submit"
+          type={backendOutdated ? 'button' : 'submit'}
+          onClick={backendOutdated ? () => void checkSession() : undefined}
           disabled={submitting}
           className="w-full py-2.5 px-4 rounded-xl bg-[#e6e8ec] hover:bg-white disabled:opacity-60 text-zinc-900 font-bold text-xs flex items-center justify-center space-x-2 transition-all cursor-pointer"
         >
           {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
-          <span>{configured ? 'Đăng nhập' : 'Tạo tài khoản & Vào hệ thống'}</span>
+          <span>{backendOutdated ? 'Thử lại kết nối Backend' : configured ? 'Đăng nhập' : 'Tạo tài khoản & Vào hệ thống'}</span>
         </button>
 
         <div className="flex items-center justify-center space-x-1.5 text-[10.5px] text-zinc-500 pt-1">
